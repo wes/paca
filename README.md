@@ -1,0 +1,153 @@
+# Paca
+
+A simple tui app for task, timer and invoicing for projects.
+
+![License](https://img.shields.io/npm/l/paca)
+![npm](https://img.shields.io/npm/v/paca)
+
+## Features
+
+- **Project Management** - Organize tasks by projects with color coding
+- **Task Tracking** - Create, edit, and manage tasks with priorities and statuses
+- **Time Tracking** - Start/stop timers with descriptions and hourly rates
+- **Timesheets** - View uninvoiced time entries grouped by project
+- **Stripe Invoicing** - Create draft invoices directly from time entries
+- **Invoice Management** - View and manage all your Stripe invoices
+- **Dashboard** - Overview of projects, tasks, and time stats
+- **Offline-first** - All data stored locally in SQLite
+- **Vim-style Navigation** - Keyboard-driven interface
+
+## Installation
+
+### Via npm (recommended)
+
+Requires [Bun](https://bun.sh) runtime.
+
+```bash
+# Install bun if you haven't already
+curl -fsSL https://bun.sh/install | bash
+
+# Install paca globally
+bun install -g paca
+
+# Run it
+paca
+```
+
+### From source
+
+```bash
+git clone https://github.com/wes/paca.git
+cd paca
+bun install
+bun run start
+```
+
+## Usage
+
+Simply run:
+
+```bash
+paca
+```
+
+On first run, Paca will automatically create its database at `~/.paca/paca.db`.
+
+## Keyboard Shortcuts
+
+### Global
+
+| Key | Action |
+|-----|--------|
+| `1` | Dashboard |
+| `2` | Tasks |
+| `3` | Timesheets |
+| `4` | Invoices |
+| `5` | Settings |
+| `?` | Help |
+| `t` | Start timer |
+| `s` | Stop timer (when running) |
+| `q` | Quit |
+
+### Navigation
+
+| Key | Action |
+|-----|--------|
+| `j` / `↓` | Move down |
+| `k` / `↑` | Move up |
+| `Tab` | Switch panels |
+| `Enter` | Select/Confirm |
+| `Esc` | Cancel/Go back |
+
+### Projects & Tasks
+
+| Key | Action |
+|-----|--------|
+| `n` | Create new |
+| `e` | Edit |
+| `d` | Delete |
+| `Space` | Toggle task status |
+| `p` | Cycle priority |
+| `a` | Archive/Unarchive project |
+| `A` | Toggle show archived |
+| `c` | Link customer to project |
+
+### Timesheets
+
+| Key | Action |
+|-----|--------|
+| `Space` | Select entry for invoicing |
+| `e` | Edit time entry |
+| `d` | Delete time entry |
+| `i` | Create invoice from selected |
+
+### Invoices
+
+| Key | Action |
+|-----|--------|
+| `Enter` | Open invoice in browser |
+| `r` | Refresh list |
+| `]` | Next page |
+| `[` | Previous page |
+
+## Configuration
+
+### Settings
+
+Access settings by pressing `5`:
+
+- **Business Name** - Your business name for invoices
+- **Stripe API Key** - Enable invoicing features
+- **Timezone** - Set display timezone (or auto-detect)
+- **Export/Import** - Backup and restore your data
+
+### Data Location
+
+- Database: `~/.paca/paca.db`
+- Backups: `~/.paca/backups/`
+
+## Stripe Integration
+
+To enable invoicing:
+
+1. Get your Stripe API key from [dashboard.stripe.com/apikeys](https://dashboard.stripe.com/apikeys)
+2. Press `5` to go to Settings
+3. Add your Stripe Secret Key
+4. Link customers to projects using `c` in the Projects view
+5. Create invoices from the Timesheets view
+
+## Tech Stack
+
+- **Runtime**: [Bun](https://bun.sh)
+- **TUI Framework**: [@opentui/react](https://github.com/anthropic/opentui)
+- **Database**: SQLite via libsql
+- **ORM**: Prisma 7
+- **Payments**: Stripe API
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+MIT - see [LICENSE](LICENSE) for details.

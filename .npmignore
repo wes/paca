@@ -1,0 +1,39 @@
+# Development files
+.git
+.github
+.cursor
+.idea
+.vscode
+.DS_Store
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__
+coverage
+
+# Build artifacts
+*.tgz
+dist
+out
+
+# Documentation (keep README and LICENSE)
+CONTRIBUTING.md
+CLAUDE.md
+
+# Config files
+.env*
+.eslintrc*
+.prettierrc*
+tsconfig.json
+biome.json
+
+# Development database
+*.db
+*.db-journal
+
+# Logs
+*.log
+logs

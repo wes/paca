@@ -1,0 +1,71 @@
+{
+  "name": "paca",
+  "version": "0.1.0",
+  "description": "A TUI-based project and time management app with Stripe invoicing",
+  "module": "src/index.tsx",
+  "type": "module",
+  "private": false,
+  "bin": {
+    "paca": "./src/index.tsx"
+  },
+  "files": [
+    "src",
+    "prisma",
+    "generated"
+  ],
+  "scripts": {
+    "start": "bun run src/index.tsx",
+    "dev": "bun run --watch src/index.tsx",
+    "db:migrate": "bunx prisma migrate dev",
+    "db:push": "bunx prisma db push",
+    "db:studio": "bunx prisma studio",
+    "postinstall": "bunx prisma generate",
+    "prepublishOnly": "bunx prisma generate"
+  },
+  "keywords": [
+    "tui",
+    "cli",
+    "task-manager",
+    "todo",
+    "project-management",
+    "terminal",
+    "time-tracking",
+    "invoicing",
+    "stripe",
+    "productivity",
+    "timesheet",
+    "bun"
+  ],
+  "author": "Wes Edling",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wes/paca.git"
+  },
+  "homepage": "https://github.com/wes/paca#readme",
+  "bugs": {
+    "url": "https://github.com/wes/paca/issues"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.8"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.0",
+    "@opentui/core": "^0.1.72",
+    "@opentui/react": "^0.1.72",
+    "@prisma/adapter-better-sqlite3": "^7.2.0",
+    "@prisma/adapter-libsql": "^7.2.0",
+    "@prisma/client": "^7.2.0",
+    "better-sqlite3": "^12.6.0",
+    "prisma": "^7.2.0",
+    "react": "^19.2.3",
+    "stripe": "^20.2.0"
+  }
+}

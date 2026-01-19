@@ -1,0 +1,162 @@
+// Paca - Task Manager Database Schema
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Customers for invoicing
+model Customer {
+  id               String   @id @default(uuid())
+  name             String
+  email            String   @unique
+  stripeCustomerId String? // Stripe customer ID once created
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  projects Project[]
+  invoices Invoice[]
+
+  @@index([email])
+}
+
+// Projects are the core organizational unit
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  color       String   @default("#3b82f6") // Default blue color
+  hourlyRate  Float? // Hourly rate for billing/tracking
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tasks       Task[]
+  timeEntries TimeEntry[]
+  customerId  String?
+  customer    Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  invoices    Invoice[]
+
+  // Future: GitHub integration fields
+  // githubRepoId    String?
+  // githubProjectId String?
+  // syncEnabled     Boolean @default(false)
+
+  @@index([archived])
+  @@index([createdAt])
+  @@index([customerId])
+}
+
+// Time tracking entries
+model TimeEntry {
+  id          String    @id @default(uuid())
+  startTime   DateTime
+  endTime     DateTime?
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([startTime])
+  @@index([invoiceId])
+}
+
+// Invoices for time entries
+model Invoice {
+  id              String   @id @default(uuid())
+  stripeInvoiceId String? // Stripe invoice ID once created
+  status          String   @default("draft") // draft, sent, paid
+  totalHours      Float
+  totalAmount     Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id])
+  customerId  String
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  timeEntries TimeEntry[]
+
+  @@index([projectId])
+  @@index([customerId])
+  @@index([status])
+}
+
+// Tasks belong to projects
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  status      String    @default("todo") // todo, in_progress, done
+  priority    String    @default("medium") // low, medium, high, urgent
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tags      TaskTag[]
+
+  // Future: GitHub integration fields
+  // githubIssueId     String?
+  // githubIssueNumber Int?
+  // syncEnabled       Boolean @default(false)
+
+  @@index([projectId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+}
+
+// Tags for categorizing tasks
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  color     String   @default("#6b7280") // Default gray
+  createdAt DateTime @default(now())
+
+  // Relations
+  tasks TaskTag[]
+}
+
+// Many-to-many relation between tasks and tags
+model TaskTag {
+  taskId String
+  tagId  String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+}
+
+// App settings/preferences
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// Future: User model for cloud sync
+// model User {
+//   id           String    @id @default(uuid())
+//   email        String    @unique
+//   name         String?
+//   createdAt    DateTime  @default(now())
+//   lastSyncAt   DateTime?
+// }
