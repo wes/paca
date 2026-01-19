@@ -1,6 +1,6 @@
 {
   "name": "pacatui",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A simple tui app for task, timer and invoicing for projects.",
   "module": "src/index.tsx",
   "type": "module",
