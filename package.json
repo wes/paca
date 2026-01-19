@@ -1,7 +1,7 @@
 {
   "name": "paca",
   "version": "0.1.0",
-  "description": "A TUI-based project and time management app with Stripe invoicing",
+  "description": "A simple tui app for task, timer and invoicing for projects.",
   "module": "src/index.tsx",
   "type": "module",
   "private": false,
