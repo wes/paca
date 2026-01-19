@@ -9,7 +9,6 @@ export { InputModal, ConfirmModal } from "./InputModal.tsx";
 export { ProjectModal } from "./ProjectModal.tsx";
 export { Timer, formatDurationHuman } from "./Timer.tsx";
 export { ProjectSelectModal, StopTimerModal } from "./TimerModals.tsx";
-export { SplashScreen } from "./SplashScreen.tsx";
 export { TimesheetView } from "./TimesheetView.tsx";
 export { CustomerModal } from "./CustomerModal.tsx";
 export { CustomerSelectModal } from "./CustomerSelectModal.tsx";

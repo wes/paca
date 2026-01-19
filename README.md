@@ -1,6 +1,8 @@
 # Paca
 
-A simple tui app for task, timer and invoicing for projects.
+![Paca](assets/paca-mascot.png "Paca - the friendly alpaca mascot")
+
+A simple TUI app for task, timer and invoicing for projects.
 
 ![License](https://img.shields.io/npm/l/pacatui)
 ![npm](https://img.shields.io/npm/v/pacatui)
@@ -21,16 +23,15 @@ A simple tui app for task, timer and invoicing for projects.
 
 ### Via npm (recommended)
 
-Requires [Bun](https://bun.sh) runtime.
+```bash
+npm install -g pacatui
+paca
+```
+
+### Via bun
 
 ```bash
-# Install bun if you haven't already
-curl -fsSL https://bun.sh/install | bash
-
-# Install pacatui globally
 bun install -g pacatui
-
-# Run it
 paca
 ```
 

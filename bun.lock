@@ -12,6 +12,8 @@
         "@prisma/adapter-libsql": "^7.2.0",
         "@prisma/client": "^7.2.0",
         "better-sqlite3": "^12.6.0",
+        "paca": "^1.0.10",
+        "pacatui": "^0.1.1",
         "prisma": "^7.2.0",
         "react": "^19.2.3",
         "stripe": "^20.2.0",
@@ -403,6 +405,10 @@
     "omggif": ["omggif@1.0.10", "", {}, "sha512-LMJTtvgc/nugXj0Vcrrs68Mn2D1r0zf630VNtqtpI1FEO7e+O9FP4gqs9AcnBaSEeoHIPm28u6qgPR0oyEpGSw=="],
 
     "once": ["once@1.4.0", "", { "dependencies": { "wrappy": "1" } }, "sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w=="],
+
+    "paca": ["paca@1.0.10", "", { "bin": { "paca": "./index.js" } }, "sha512-7Euf70VNk8vWhIi9kjB0uREFiVIkNhcGrrS3t76RLce1oLsDtTXp7X+hS330x/W1qykNy3+2YUyUFw5WbYBNOA=="],
+
+    "pacatui": ["pacatui@0.1.1", "", { "dependencies": { "@libsql/client": "^0.17.0", "@opentui/core": "^0.1.72", "@opentui/react": "^0.1.72", "@prisma/adapter-better-sqlite3": "^7.2.0", "@prisma/adapter-libsql": "^7.2.0", "@prisma/client": "^7.2.0", "better-sqlite3": "^12.6.0", "prisma": "^7.2.0", "react": "^19.2.3", "stripe": "^20.2.0" }, "peerDependencies": { "typescript": "^5" }, "bin": { "paca": "src/index.tsx" } }, "sha512-HGNh1FXkJDgVVvuO8cAv2MKRFA/PNJTzBYjXUEWxKgIn4B+LD6ofjS8kTJr0s+qWm00wZfpFDgwfzQSr74Vgrw=="],
 
     "pako": ["pako@1.0.11", "", {}, "sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw=="],
 

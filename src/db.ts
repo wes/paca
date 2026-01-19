@@ -405,7 +405,7 @@ export const stats = {
     for (const weekKey of sortedWeeks) {
       const weekMap = weeklyData.get(weekKey)!;
       const weekDate = new Date(weekKey);
-      const weekLabel = `${weekDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+      const weekLabel = `${weekDate.getMonth() + 1}/${weekDate.getDate()}`;
 
       const projects: { projectId: string; projectName: string; projectColor: string; ms: number }[] = [];
       let totalMs = 0;

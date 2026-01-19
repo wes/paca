@@ -120,8 +120,8 @@ function WeeklyTimeChart({
 	data: WeeklyTimeData[];
 	width: number;
 }) {
-	const chartWidth = Math.max(width - 4, 40);
-	const maxBars = Math.min(data.length, Math.floor(chartWidth / 3)); // Each bar needs ~3 chars min
+	const chartWidth = Math.max(width + 4, 40);
+	const maxBars = Math.min(data.length, 25, Math.floor(chartWidth / 3)); // Each bar needs ~3 chars min, max 25 weeks
 	const recentData = data.slice(-maxBars);
 
 	if (recentData.length === 0) {
@@ -134,13 +134,19 @@ function WeeklyTimeChart({
 
 	// Find max hours for scaling
 	const maxMs = Math.max(...recentData.map((d) => d.totalMs), 1);
-	const barHeight = 6; // Height of bars in rows
+	const barHeight = 5; // Height of bars in rows
 
-	// Calculate bar width based on available space
-	const barWidth = Math.max(2, Math.floor((chartWidth - 8) / recentData.length) - 1);
+	// Calculate bar width to fill available space
+	// Total width = (barWidth * n) + (n - 1) spaces = chartWidth
+	// barWidth = (chartWidth - n + 1) / n
+
+	const barWidth = 4;
 
 	// Collect unique projects for legend (sorted by total time across all weeks)
-	const projectTotals = new Map<string, { name: string; color: string; totalMs: number }>();
+	const projectTotals = new Map<
+		string,
+		{ name: string; color: string; totalMs: number }
+	>();
 	for (const week of recentData) {
 		for (const p of week.projects) {
 			const existing = projectTotals.get(p.projectId);
@@ -156,8 +162,9 @@ function WeeklyTimeChart({
 		}
 	}
 	// Sort projects by total time (descending) for consistent stacking order
-	const sortedProjects = Array.from(projectTotals.entries())
-		.sort((a, b) => b[1].totalMs - a[1].totalMs);
+	const sortedProjects = Array.from(projectTotals.entries()).sort(
+		(a, b) => b[1].totalMs - a[1].totalMs,
+	);
 
 	// Assign dynamic colors to each project based on their sorted position
 	const projectColorMap = new Map<string, string>();
@@ -165,37 +172,47 @@ function WeeklyTimeChart({
 		projectColorMap.set(projectId, CHART_COLORS[index % CHART_COLORS.length]!);
 	});
 
-	// Build bars row by row (from top to bottom)
+	// Pre-sort each week's projects by the global order for consistent stacking
+	const weekProjectsSorted = recentData.map((week) =>
+		[...week.projects].sort((a, b) => {
+			const aIdx = sortedProjects.findIndex(([id]) => id === a.projectId);
+			const bIdx = sortedProjects.findIndex(([id]) => id === b.projectId);
+			return aIdx - bIdx;
+		}),
+	);
+
+	// Pre-calculate bar heights for label positioning
+	const barHeights = recentData.map((week) =>
+		Math.round((week.totalMs / maxMs) * barHeight),
+	);
+
+	// Build bars row by row (from top to bottom, +1 row for labels on tallest bars)
 	const rows: ReactNode[] = [];
-	for (let row = barHeight - 1; row >= 0; row--) {
+	for (let row = barHeight; row >= 0; row--) {
 		const rowParts: ReactNode[] = [];
 
 		for (let i = 0; i < recentData.length; i++) {
 			const week = recentData[i]!;
-			const barTotalRows = Math.round((week.totalMs / maxMs) * barHeight);
+			const barTotalRows = barHeights[i]!;
 
 			if (row < barTotalRows) {
 				// This row should be filled - determine which project's color
-				// Sort this week's projects by the global order for consistent stacking
-				const weekProjects = [...week.projects].sort((a, b) => {
-					const aIdx = sortedProjects.findIndex(([id]) => id === a.projectId);
-					const bIdx = sortedProjects.findIndex(([id]) => id === b.projectId);
-					return aIdx - bIdx;
-				});
+				// Use fraction-based calculation to avoid rounding errors
+				const rowFraction = (row + 0.5) / barTotalRows;
+				const weekProjects = weekProjectsSorted[i]!;
 
-				// Calculate which project this row belongs to (stacked from bottom)
-				let cumulativeRows = 0;
+				// Find which project this row belongs to based on cumulative fraction
+				let cumulativeFraction = 0;
 				let projectColor = CHART_COLORS[0]!;
 
 				for (const proj of weekProjects) {
-					const projRows = Math.round((proj.ms / week.totalMs) * barTotalRows);
-					if (row < cumulativeRows + projRows) {
-						projectColor = projectColorMap.get(proj.projectId) || CHART_COLORS[0]!;
+					const projFraction = proj.ms / week.totalMs;
+					cumulativeFraction += projFraction;
+					if (rowFraction <= cumulativeFraction) {
+						projectColor =
+							projectColorMap.get(proj.projectId) || CHART_COLORS[0]!;
 						break;
 					}
-					cumulativeRows += projRows;
-					// If we've gone through all projects, use the last one's color
-					projectColor = projectColorMap.get(proj.projectId) || CHART_COLORS[0]!;
 				}
 
 				rowParts.push(
@@ -203,12 +220,22 @@ function WeeklyTimeChart({
 						{"█".repeat(barWidth)}
 					</span>,
 				);
-			} else {
+			} else if (row === barTotalRows && week.totalMs > 0) {
+				// Show hour label just above the bar (centered)
+				const label = formatHours(week.totalMs);
+				const trimmed = label.slice(0, barWidth);
+				const padLeft = Math.floor((barWidth - trimmed.length) / 2);
+				const centered =
+					" ".repeat(padLeft) +
+					trimmed +
+					" ".repeat(barWidth - padLeft - trimmed.length);
 				rowParts.push(
-					<span key={i} fg="#1e293b">
-						{" ".repeat(barWidth)}
+					<span key={i} fg="#64748b">
+						{centered}
 					</span>,
 				);
+			} else {
+				rowParts.push(<span key={i}>{" ".repeat(barWidth)}</span>);
 			}
 			// Add space between bars
 			if (i < recentData.length - 1) {
@@ -216,54 +243,49 @@ function WeeklyTimeChart({
 			}
 		}
 
-		rows.push(
-			<text key={row}>
-				{rowParts}
-			</text>,
-		);
-	}
-
-	// X-axis labels (week labels)
-	const labelParts: ReactNode[] = [];
-	for (let i = 0; i < recentData.length; i++) {
-		const week = recentData[i]!;
-		const label = week.weekLabel.slice(0, barWidth + 1).padEnd(barWidth, " ");
-		labelParts.push(
-			<span key={i} fg="#64748b">
-				{label}
-			</span>,
-		);
-		if (i < recentData.length - 1) {
-			labelParts.push(<span key={`sp-${i}`}> </span>);
-		}
+		rows.push(<text key={row}>{rowParts}</text>);
 	}
 
 	// Calculate total hours for display
 	const totalMs = recentData.reduce((sum, w) => sum + w.totalMs, 0);
 
+	// Build date labels row
+	const dateLabelParts: ReactNode[] = [];
+	for (let i = 0; i < recentData.length; i++) {
+		const week = recentData[i]!;
+		const trimmed = week.weekLabel.slice(0, barWidth);
+		const padLeft = Math.floor((barWidth - trimmed.length) / 2);
+		const centered =
+			" ".repeat(padLeft) +
+			trimmed +
+			" ".repeat(barWidth - padLeft - trimmed.length);
+		dateLabelParts.push(
+			<span key={i} fg="#64748b">
+				{centered}
+			</span>,
+		);
+		if (i < recentData.length - 1) {
+			dateLabelParts.push(<span key={`sp-${i}`}> </span>);
+		}
+	}
+
 	return (
 		<box style={{ flexDirection: "column", gap: 1, width: "100%" }}>
-			{/* Y-axis scale indicator */}
-			<text fg="#64748b">
-				{formatHours(maxMs)} max
-			</text>
-
-			{/* Bars */}
+			{/* Bars (with hour labels at top) */}
 			{rows}
-
-			{/* X-axis labels */}
-			<text>{labelParts}</text>
+			{/* Date labels */}
+			<text>{dateLabelParts}</text>
 
 			{/* Legend - show top projects by time */}
-			<box style={{ flexDirection: "row", gap: 2, marginTop: 1, flexWrap: "wrap" }}>
-				{sortedProjects
-					.slice(0, 4)
-					.map(([id, proj]) => (
-						<text key={id}>
-							<span fg={projectColorMap.get(id)}>●</span>
-							<span fg="#94a3b8"> {proj.name.slice(0, 12)}</span>
-						</text>
-					))}
+			<box
+				style={{ flexDirection: "row", gap: 2, marginTop: 1, flexWrap: "wrap" }}
+			>
+				{sortedProjects.slice(0, 4).map(([id, proj]) => (
+					<text key={id}>
+						<span fg={projectColorMap.get(id)}>●</span>
+						<span fg="#94a3b8"> {proj.name.slice(0, 12)}</span>
+					</text>
+				))}
 				<text>
 					<span fg="#94a3b8">Total: </span>
 					<span fg="#ffffff" attributes="bold">
@@ -312,33 +334,21 @@ export function Dashboard({
 			style={{
 				flexDirection: "column",
 				flexGrow: 1,
-				padding: 1,
-				gap: 1,
+				padding: 2,
+				gap: 3,
 			}}
 		>
 			{/* Progress Section */}
-			<box
-				title="Task Status"
-				style={{
-					border: true,
-					borderColor: "#334155",
-					padding: 1,
-					flexDirection: "column",
-					width: "100%",
-				}}
-			>
+			<box title="Task Status">
 				<StackedBarChart stats={stats} width={termWidth} />
 			</box>
 
 			{/* Weekly Time Chart */}
 			<box
-				title="Weekly Time (6 Months)"
+				title="Weekly Time"
 				style={{
-					border: true,
-					borderColor: "#334155",
-					padding: 1,
-					flexDirection: "column",
-					width: "100%",
+					justifyContent: "center",
+					alignItems: "center",
 				}}
 			>
 				<WeeklyTimeChart data={weeklyTimeData} width={termWidth} />

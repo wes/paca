@@ -14,7 +14,6 @@ import {
 	ProjectModal,
 	ProjectSelectModal,
 	StopTimerModal,
-	SplashScreen,
 	TimesheetView,
 	CustomerModal,
 	CustomerSelectModal,
@@ -64,9 +63,6 @@ function formatDuration(ms: number): string {
 
 export function App() {
 	const renderer = useRenderer();
-
-	// Splash Screen State
-	const [showSplash, setShowSplash] = useState(true);
 
 	// View & Navigation State
 	const [currentView, setCurrentView] = useState<View>("dashboard");
@@ -297,12 +293,6 @@ export function App() {
 		}
 	}, [selectedTimesheetGroupIndex, selectedTimeEntryIndex]);
 
-	// Hide splash screen after 2 seconds
-	useEffect(() => {
-		const timer = setTimeout(() => setShowSplash(false), 1000);
-		return () => clearTimeout(timer);
-	}, []);
-
 	// Initial load
 	useEffect(() => {
 		loadProjects();
@@ -522,27 +512,43 @@ export function App() {
 			return;
 		}
 
-		// Toggle status
+		// Toggle status (update locally to preserve order)
 		if (key.name === "space" && recentTasks[selectedDashboardTaskIndex]) {
 			const task = recentTasks[selectedDashboardTaskIndex];
 			if (task) {
+				const statusCycle: Record<string, string> = {
+					todo: "in_progress",
+					in_progress: "done",
+					done: "todo",
+				};
+				const newStatus = statusCycle[task.status] || "todo";
 				tasks.toggleStatus(task.id).then(() => {
-					loadDashboard();
+					// Update local state without reordering
+					setRecentTasks((prev) =>
+						prev.map((t) =>
+							t.id === task.id ? { ...t, status: newStatus } : t,
+						),
+					);
 				});
 			}
 			return;
 		}
 
-		// Cycle priority
+		// Cycle priority (update locally to preserve order)
 		if (key.name === "p" && recentTasks[selectedDashboardTaskIndex]) {
 			const task = recentTasks[selectedDashboardTaskIndex];
 			if (task) {
-				const priorities = ["low", "medium", "high", "urgent"];
-				const currentIndex = priorities.indexOf(task.priority);
-				const nextPriority = priorities[(currentIndex + 1) % priorities.length];
+				const priorities = ["low", "medium", "high", "urgent"] as const;
+				const currentIndex = priorities.indexOf(task.priority as typeof priorities[number]);
+				const nextPriority = priorities[(currentIndex + 1) % priorities.length] ?? "low";
 				tasks.update(task.id, { priority: nextPriority }).then(() => {
 					showMessage(`Priority: ${nextPriority}`);
-					loadDashboard();
+					// Update local state without reordering
+					setRecentTasks((prev) =>
+						prev.map((t) =>
+							t.id === task.id ? { ...t, priority: nextPriority } : t,
+						),
+					);
 				});
 			}
 			return;
@@ -696,12 +702,23 @@ export function App() {
 			return;
 		}
 
-		// Toggle status
+		// Toggle status (update locally to preserve order)
 		if (key.name === "space" && taskList[selectedTaskIndex]) {
 			const task = taskList[selectedTaskIndex];
 			if (task) {
+				const statusCycle: Record<string, string> = {
+					todo: "in_progress",
+					in_progress: "done",
+					done: "todo",
+				};
+				const newStatus = statusCycle[task.status] || "todo";
 				tasks.toggleStatus(task.id).then(() => {
-					loadTasks();
+					// Update local state without reordering
+					setTaskList((prev) =>
+						prev.map((t) =>
+							t.id === task.id ? { ...t, status: newStatus } : t,
+						),
+					);
 					loadDashboard();
 				});
 			}
@@ -724,16 +741,21 @@ export function App() {
 			return;
 		}
 
-		// Cycle priority
+		// Cycle priority (update locally to preserve order)
 		if (key.name === "p" && taskList[selectedTaskIndex]) {
 			const task = taskList[selectedTaskIndex];
 			if (task) {
-				const priorities = ["low", "medium", "high", "urgent"];
-				const currentIndex = priorities.indexOf(task.priority);
-				const nextPriority = priorities[(currentIndex + 1) % priorities.length];
+				const priorities = ["low", "medium", "high", "urgent"] as const;
+				const currentIndex = priorities.indexOf(task.priority as typeof priorities[number]);
+				const nextPriority = priorities[(currentIndex + 1) % priorities.length] ?? "low";
 				tasks.update(task.id, { priority: nextPriority }).then(() => {
 					showMessage(`Priority: ${nextPriority}`);
-					loadTasks();
+					// Update local state without reordering
+					setTaskList((prev) =>
+						prev.map((t) =>
+							t.id === task.id ? { ...t, priority: nextPriority } : t,
+						),
+					);
 				});
 			}
 			return;
@@ -1210,11 +1232,6 @@ export function App() {
 	};
 
 	const selectedProject = projectList[selectedProjectIndex];
-
-	// Show splash screen on boot
-	if (showSplash) {
-		return <SplashScreen />;
-	}
 
 	return (
 		<box

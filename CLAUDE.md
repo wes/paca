@@ -9,6 +9,10 @@ Paca is a TUI-based task manager built with @opentui/react and Prisma 7. The app
 - **Database**: SQLite via @prisma/adapter-libsql
 - **ORM**: Prisma 7
 
+## Branding
+- **Mascot**: Paca the alpaca - a cute, friendly alpaca character (`assets/paca-mascot.png`)
+- The name "Paca" is short for alpaca
+
 ## Project Structure
 ```
 src/
@@ -28,6 +32,8 @@ prisma/
   schema.prisma  - Database schema
 generated/
   prisma/        - Generated Prisma client
+assets/
+  paca-mascot.png - App mascot/icon
 ```
 
 ## Key Commands
