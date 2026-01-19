@@ -2,8 +2,8 @@
 
 A simple tui app for task, timer and invoicing for projects.
 
-![License](https://img.shields.io/npm/l/paca)
-![npm](https://img.shields.io/npm/v/paca)
+![License](https://img.shields.io/npm/l/pacatui)
+![npm](https://img.shields.io/npm/v/pacatui)
 
 ## Features
 
@@ -27,8 +27,8 @@ Requires [Bun](https://bun.sh) runtime.
 # Install bun if you haven't already
 curl -fsSL https://bun.sh/install | bash
 
-# Install paca globally
-bun install -g paca
+# Install pacatui globally
+bun install -g pacatui
 
 # Run it
 paca

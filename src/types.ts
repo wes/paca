@@ -270,6 +270,18 @@ export interface DashboardStats {
 	completionRate: number;
 }
 
+export interface WeeklyTimeData {
+	weekStart: string;
+	weekLabel: string;
+	projects: {
+		projectId: string;
+		projectName: string;
+		projectColor: string;
+		ms: number;
+	}[];
+	totalMs: number;
+}
+
 export interface TimesheetGroup {
 	project: {
 		id: string;

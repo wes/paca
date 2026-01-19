@@ -119,12 +119,37 @@ export interface ListInvoicesResult {
   nextCursor: string | null;
 }
 
-// List invoices from Stripe with pagination
+// Cache for invoice list requests (2 minute TTL)
+const CACHE_TTL_MS = 2 * 60 * 1000;
+const invoiceCache = new Map<string, { data: ListInvoicesResult; timestamp: number }>();
+
+function getCacheKey(apiKey: string, cursor?: string): string {
+  // Use last 8 chars of API key + cursor for cache key
+  return `${apiKey.slice(-8)}:${cursor ?? "first"}`;
+}
+
+// Clear the invoice cache (call after creating new invoices)
+export function clearInvoiceCache(): void {
+  invoiceCache.clear();
+}
+
+// List invoices from Stripe with pagination and caching
 export async function listInvoices(
   apiKey: string,
   limit = 25,
   startingAfter?: string,
+  forceRefresh = false,
 ): Promise<ListInvoicesResult> {
+  const cacheKey = getCacheKey(apiKey, startingAfter);
+
+  // Check cache first (unless force refresh)
+  if (!forceRefresh) {
+    const cached = invoiceCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data;
+    }
+  }
+
   const stripe = new Stripe(apiKey);
 
   const params: Stripe.InvoiceListParams = {
@@ -155,9 +180,14 @@ export async function listInvoices(
     };
   });
 
-  return {
+  const result: ListInvoicesResult = {
     invoices,
     hasMore: response.has_more,
     nextCursor: response.data.length > 0 ? response.data[response.data.length - 1]?.id ?? null : null,
   };
+
+  // Store in cache
+  invoiceCache.set(cacheKey, { data: result, timestamp: Date.now() });
+
+  return result;
 }

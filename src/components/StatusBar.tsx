@@ -30,7 +30,8 @@ function getShortCuts(
 		return [
 			...baseShortcuts,
 			{ key: "⇅", action: "navigate" },
-			{ key: "↵", action: "open" },
+			{ key: "↵", action: "open in Stripe" },
+			{ key: "p", action: "public URL" },
 			{ key: "r", action: "refresh" },
 			{ key: "[]", action: "page" },
 		];

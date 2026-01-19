@@ -62,9 +62,8 @@ export function TimesheetView({
 					}}
 				>
 					<text fg="#ffffff">Timesheets</text>
-					<text fg="#94a3b8">Uninvoiced Time</text>
 				</box>
-				<text fg={COLORS.borderOff}>{"─".repeat(56)}</text>
+
 				<box
 					style={{
 						flexGrow: 1,
@@ -86,21 +85,6 @@ export function TimesheetView({
 				padding: 1,
 			}}
 		>
-			<box
-				style={{
-					flexDirection: "row",
-					justifyContent: "space-between",
-				}}
-			>
-				<text fg="#ffffff">Timesheets</text>
-				<text fg="#94a3b8">
-					{selectedEntryIds.size > 0
-						? `${selectedEntryIds.size} selected`
-						: "Uninvoiced Time"}
-				</text>
-			</box>
-			<text fg={COLORS.borderOff}>{"─".repeat(56)}</text>
-
 			<scrollbox focused={focused} style={{ flexGrow: 1 }}>
 				{groups.map((group, groupIndex) => {
 					const isSelectedGroup = groupIndex === selectedGroupIndex;

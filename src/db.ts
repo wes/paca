@@ -343,6 +343,93 @@ export const stats = {
       monthMs: calcDuration(monthEntries),
     };
   },
+
+  async getWeeklyTimeStats(months = 6) {
+    // Get date 6 months ago
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - months);
+    startDate.setHours(0, 0, 0, 0);
+    // Set to start of that week (Sunday)
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+
+    // Get all time entries in this range
+    const entries = await db.timeEntry.findMany({
+      where: {
+        startTime: { gte: startDate },
+        endTime: { not: null },
+      },
+      include: {
+        project: {
+          select: { id: true, name: true, color: true },
+        },
+      },
+    });
+
+    // Group entries by week and project
+    const weeklyData = new Map<string, Map<string, { ms: number; project: { id: string; name: string; color: string } }>>();
+
+    for (const entry of entries) {
+      if (!entry.endTime) continue;
+
+      // Get week start (Sunday) for this entry
+      const entryDate = new Date(entry.startTime);
+      const weekStart = new Date(entryDate);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      const weekKey = weekStart.toISOString().split("T")[0]!;
+
+      if (!weeklyData.has(weekKey)) {
+        weeklyData.set(weekKey, new Map());
+      }
+
+      const weekMap = weeklyData.get(weekKey)!;
+      const projectId = entry.project.id;
+
+      if (!weekMap.has(projectId)) {
+        weekMap.set(projectId, { ms: 0, project: entry.project });
+      }
+
+      const projectData = weekMap.get(projectId)!;
+      projectData.ms += new Date(entry.endTime).getTime() - new Date(entry.startTime).getTime();
+    }
+
+    // Convert to array sorted by week
+    const result: {
+      weekStart: string;
+      weekLabel: string;
+      projects: { projectId: string; projectName: string; projectColor: string; ms: number }[];
+      totalMs: number;
+    }[] = [];
+
+    const sortedWeeks = Array.from(weeklyData.keys()).sort();
+    for (const weekKey of sortedWeeks) {
+      const weekMap = weeklyData.get(weekKey)!;
+      const weekDate = new Date(weekKey);
+      const weekLabel = `${weekDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+
+      const projects: { projectId: string; projectName: string; projectColor: string; ms: number }[] = [];
+      let totalMs = 0;
+
+      for (const [projectId, data] of weekMap) {
+        projects.push({
+          projectId,
+          projectName: data.project.name,
+          projectColor: data.project.color,
+          ms: data.ms,
+        });
+        totalMs += data.ms;
+      }
+
+      result.push({
+        weekStart: weekKey,
+        weekLabel,
+        projects,
+        totalMs,
+      });
+    }
+
+    return result;
+  },
 };
 
 // Time entry operations

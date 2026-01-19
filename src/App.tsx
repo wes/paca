@@ -32,7 +32,7 @@ import {
 	customers,
 	invoices,
 } from "./db.ts";
-import { getOrCreateStripeCustomer, createDraftInvoice, listInvoices, type StripeInvoiceItem } from "./stripe.ts";
+import { getOrCreateStripeCustomer, createDraftInvoice, listInvoices, clearInvoiceCache, type StripeInvoiceItem } from "./stripe.ts";
 import {
 	getEffectiveTimezone,
 	type View,
@@ -47,6 +47,7 @@ import {
 	type Customer,
 	type TimeEntry,
 	type TimeEntryWithProject,
+	type WeeklyTimeData,
 } from "./types.ts";
 
 function formatDuration(ms: number): string {
@@ -89,6 +90,7 @@ export function App() {
 	const [recentTasks, setRecentTasks] = useState<
 		(Task & { project: { name: string; color: string } })[]
 	>([]);
+	const [weeklyTimeData, setWeeklyTimeData] = useState<WeeklyTimeData[]>([]);
 
 	// Timer State
 	const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(null);
@@ -171,14 +173,16 @@ export function App() {
 	}, [projectList, selectedProjectIndex, selectedTaskIndex]);
 
 	const loadDashboard = useCallback(async () => {
-		const [statsData, recent] = await Promise.all([
+		const [statsData, recent, weeklyTime] = await Promise.all([
 			stats.getDashboardStats(),
 			stats.getRecentActivity(10),
+			stats.getWeeklyTimeStats(6),
 		]);
 		setDashboardStats(statsData);
 		setRecentTasks(
 			recent as (Task & { project: { name: string; color: string } })[],
 		);
+		setWeeklyTimeData(weeklyTime);
 	}, []);
 
 	const loadRunningTimer = useCallback(async () => {
@@ -204,21 +208,27 @@ export function App() {
 		setCustomerList(data);
 	}, []);
 
-	const loadStripeInvoices = useCallback(async (cursor?: string, isNextPage = false) => {
+	const loadStripeInvoices = useCallback(async (cursor?: string, isNextPage = false, forceRefresh = false) => {
 		if (!appSettings.stripeApiKey) {
 			setStripeInvoices([]);
 			setInvoicesError(null);
 			return;
 		}
 
-		setInvoicesLoading(true);
+		// Only show loading spinner if we don't have existing data
+		const showLoading = stripeInvoices.length === 0;
+		if (showLoading) {
+			setInvoicesLoading(true);
+		}
 		setInvoicesError(null);
 
 		try {
-			const result = await listInvoices(appSettings.stripeApiKey, 25, cursor);
+			const result = await listInvoices(appSettings.stripeApiKey, 25, cursor, forceRefresh);
 			setStripeInvoices(result.invoices);
 			setInvoicesHasMore(result.hasMore);
-			setSelectedInvoiceIndex(0);
+			if (showLoading || isNextPage) {
+				setSelectedInvoiceIndex(0);
+			}
 
 			// Track cursor for pagination
 			if (isNextPage && cursor) {
@@ -230,7 +240,7 @@ export function App() {
 		} finally {
 			setInvoicesLoading(false);
 		}
-	}, [appSettings.stripeApiKey]);
+	}, [appSettings.stripeApiKey, stripeInvoices.length]);
 
 	const loadTimesheets = useCallback(async () => {
 		const entries = await timeEntries.getUninvoiced();
@@ -875,17 +885,28 @@ export function App() {
 			return;
 		}
 
-		// Open invoice in browser
+		// Open invoice in Stripe dashboard
 		if (key.name === "return") {
 			const invoice = stripeInvoices[selectedInvoiceIndex];
 			if (invoice) {
-				// Use hosted URL for finalized invoices, dashboard URL for drafts
-				const url = invoice.hostedUrl || invoice.dashboardUrl;
 				const { spawn } = require("child_process");
 				const platform = process.platform;
 				const cmd = platform === "darwin" ? "open" : platform === "win32" ? "start" : "xdg-open";
-				spawn(cmd, [url], { detached: true, stdio: "ignore" });
-				showMessage(invoice.hostedUrl ? "Opening invoice..." : "Opening in Stripe dashboard...");
+				spawn(cmd, [invoice.dashboardUrl], { detached: true, stdio: "ignore" });
+				showMessage("Opening in Stripe dashboard...");
+			}
+			return;
+		}
+
+		// Open public invoice URL
+		if (key.name === "p") {
+			const invoice = stripeInvoices[selectedInvoiceIndex];
+			if (invoice?.hostedUrl) {
+				const { spawn } = require("child_process");
+				const platform = process.platform;
+				const cmd = platform === "darwin" ? "open" : platform === "win32" ? "start" : "xdg-open";
+				spawn(cmd, [invoice.hostedUrl], { detached: true, stdio: "ignore" });
+				showMessage("Opening public invoice...");
 			}
 			return;
 		}
@@ -894,7 +915,7 @@ export function App() {
 		if (key.name === "r") {
 			setInvoicesPage(1);
 			setInvoicesCursors([]);
-			loadStripeInvoices();
+			loadStripeInvoices(undefined, false, true);
 			showMessage("Refreshing invoices...");
 			return;
 		}
@@ -1174,6 +1195,9 @@ export function App() {
 			// Update with Stripe invoice ID
 			await invoices.updateStripeId(invoice.id, stripeInvoiceId);
 
+			// Clear invoice cache so new invoice appears on refresh
+			clearInvoiceCache();
+
 			showMessage(`Stripe draft invoice created: ${stripeInvoiceId}`);
 
 			// Clear selections and reload
@@ -1212,6 +1236,7 @@ export function App() {
 					<Dashboard
 						stats={dashboardStats}
 						recentTasks={recentTasks}
+						weeklyTimeData={weeklyTimeData}
 						selectedIndex={selectedDashboardTaskIndex}
 						focused={true}
 					/>

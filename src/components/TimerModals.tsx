@@ -16,21 +16,32 @@ export function ProjectSelectModal({
 	onCancel,
 }: ProjectSelectModalProps) {
 	const [selectedIndex, setSelectedIndex] = useState(0);
+	const [searchQuery, setSearchQuery] = useState("");
+	const inputRef = usePaste();
+
+	const filteredProjects = projects.filter((project) =>
+		project.name.toLowerCase().includes(searchQuery.toLowerCase()),
+	);
+
+	const handleSearchChange = (value: string) => {
+		setSearchQuery(value);
+		setSelectedIndex(0);
+	};
 
 	useKeyboard((key) => {
 		if (key.name === "escape") {
 			onCancel();
 			return;
 		}
-		if (key.name === "return" && projects[selectedIndex]) {
-			onSelect(projects[selectedIndex].id);
+		if (key.name === "return" && filteredProjects[selectedIndex]) {
+			onSelect(filteredProjects[selectedIndex].id);
 			return;
 		}
-		if (key.name === "j" || key.name === "down") {
-			setSelectedIndex((i) => Math.min(i + 1, projects.length - 1));
+		if (key.name === "down") {
+			setSelectedIndex((i) => Math.min(i + 1, filteredProjects.length - 1));
 			return;
 		}
-		if (key.name === "k" || key.name === "up") {
+		if (key.name === "up") {
 			setSelectedIndex((i) => Math.max(i - 1, 0));
 			return;
 		}
@@ -38,35 +49,56 @@ export function ProjectSelectModal({
 
 	return (
 		<Modal title="Start Timer" height={20}>
-			<box style={{ marginTop: 1, flexGrow: 1 }}>
-				<scrollbox focused style={{ flexGrow: 1 }}>
-					{projects.map((project, index) => (
-						<box
-							key={project.id}
-							style={{
-								paddingLeft: 1,
-								paddingRight: 1,
-								backgroundColor:
-									index === selectedIndex ? "#1e40af" : "transparent",
-							}}
-						>
-							<text>
-								<span fg={project.color}>[*] </span>
-								<span
-									fg={index === selectedIndex ? "#ffffff" : "#e2e8f0"}
-									attributes={index === selectedIndex ? "bold" : undefined}
-								>
-									{project.name}
-								</span>
-								{project.hourlyRate != null && (
-									<span fg="#10b981"> ${project.hourlyRate}/hr</span>
-								)}
-							</text>
-						</box>
-					))}
+			<box
+				style={{
+					border: true,
+					borderColor: "#475569",
+					height: 3,
+					marginBottom: 1,
+				}}
+			>
+				<input
+					ref={inputRef}
+					placeholder="Search projects..."
+					focused
+					value={searchQuery}
+					onInput={handleSearchChange}
+				/>
+			</box>
+			<box style={{ flexGrow: 1 }}>
+				<scrollbox style={{ flexGrow: 1 }}>
+					{filteredProjects.length === 0 ? (
+						<text fg="#64748b" style={{ paddingLeft: 1 }}>
+							No projects found
+						</text>
+					) : (
+						filteredProjects.map((project, index) => (
+							<box
+								key={project.id}
+								style={{
+									paddingLeft: 1,
+									paddingRight: 1,
+									backgroundColor:
+										index === selectedIndex ? "#1e40af" : "transparent",
+								}}
+							>
+								<text>
+									<span fg={project.color}>[*] </span>
+									<span
+										fg={index === selectedIndex ? "#ffffff" : "#e2e8f0"}
+										attributes={index === selectedIndex ? "bold" : undefined}
+									>
+										{project.name}
+									</span>
+									{project.hourlyRate != null && (
+										<span fg="#10b981"> ${project.hourlyRate}/hr</span>
+									)}
+								</text>
+							</box>
+						))
+					)}
 				</scrollbox>
 			</box>
-			<text fg="#64748b">Enter to select, Esc to cancel</text>
 		</Modal>
 	);
 }

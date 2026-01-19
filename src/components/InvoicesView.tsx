@@ -22,7 +22,7 @@ function formatCurrency(amount: number, currency: string): string {
 
 function formatDate(date: Date): string {
 	return date.toLocaleDateString("en-US", {
-		month: "short",
+		month: "numeric",
 		day: "numeric",
 		year: "numeric",
 	});
@@ -45,13 +45,12 @@ function getStatusColor(status: string): string {
 	}
 }
 
-// Column widths for table layout
+// Column widths for table layout (client column uses flexGrow for 100% width)
 const COL = {
-	number: 12,
-	date: 14,
-	customer: 24,
+	invoiceId: 18,
 	status: 10,
-	amount: 12,
+	date: 14,
+	amount: 14,
 };
 
 export function InvoicesView({
@@ -82,7 +81,7 @@ export function InvoicesView({
 				>
 					<text fg="#ffffff">Invoices</text>
 				</box>
-				<text fg={COLORS.borderOff}>{"─".repeat(72)}</text>
+				<text fg={COLORS.borderOff}>{"─".repeat(200)}</text>
 				<box
 					style={{
 						flexGrow: 1,
@@ -114,7 +113,7 @@ export function InvoicesView({
 				>
 					<text fg="#ffffff">Invoices</text>
 				</box>
-				<text fg={COLORS.borderOff}>{"─".repeat(72)}</text>
+
 				<box
 					style={{
 						flexGrow: 1,
@@ -145,7 +144,7 @@ export function InvoicesView({
 				>
 					<text fg="#ffffff">Invoices</text>
 				</box>
-				<text fg={COLORS.borderOff}>{"─".repeat(72)}</text>
+
 				<box
 					style={{
 						flexGrow: 1,
@@ -176,7 +175,7 @@ export function InvoicesView({
 				>
 					<text fg="#ffffff">Invoices</text>
 				</box>
-				<text fg={COLORS.borderOff}>{"─".repeat(72)}</text>
+
 				<box
 					style={{
 						flexGrow: 1,
@@ -198,21 +197,6 @@ export function InvoicesView({
 				padding: 1,
 			}}
 		>
-			{/* Header */}
-			<box
-				style={{
-					flexDirection: "row",
-					justifyContent: "space-between",
-				}}
-			>
-				<text fg="#ffffff">Invoices</text>
-				<text fg="#94a3b8">
-					Page {currentPage} {hasMore && "| ] next"} {hasPrevious && "| [ prev"}
-				</text>
-			</box>
-			<text fg={COLORS.borderOff}>{"─".repeat(72)}</text>
-
-			{/* Column Headers */}
 			<box
 				style={{
 					flexDirection: "row",
@@ -220,23 +204,23 @@ export function InvoicesView({
 					paddingRight: 1,
 				}}
 			>
-				<box style={{ width: COL.number }}>
-					<text fg="#64748b">Invoice #</text>
+				<box style={{ width: COL.invoiceId }}>
+					<text fg="#64748b">Invoice ID</text>
 				</box>
 				<box style={{ width: COL.date }}>
 					<text fg="#64748b">Date</text>
 				</box>
-				<box style={{ width: COL.customer }}>
-					<text fg="#64748b">Customer</text>
-				</box>
 				<box style={{ width: COL.status }}>
 					<text fg="#64748b">Status</text>
 				</box>
+				<box style={{ flexGrow: 1 }}>
+					<text fg="#64748b">Client</text>
+				</box>
+
 				<box style={{ width: COL.amount, alignItems: "flex-end" }}>
 					<text fg="#64748b">Amount</text>
 				</box>
 			</box>
-			<text fg={COLORS.borderOff}>{"─".repeat(72)}</text>
 
 			{/* Invoice List */}
 			<scrollbox focused={focused} style={{ flexGrow: 1 }}>
@@ -255,8 +239,8 @@ export function InvoicesView({
 								paddingRight: 1,
 							}}
 						>
-							{/* Invoice Number */}
-							<box style={{ width: COL.number }}>
+							{/* Invoice ID */}
+							<box style={{ width: COL.invoiceId }}>
 								<text fg={isSelected ? "#ffffff" : "#e2e8f0"}>
 									{invoice.number || invoice.id.slice(-8)}
 								</text>
@@ -265,19 +249,19 @@ export function InvoicesView({
 							<box style={{ width: COL.date }}>
 								<text fg="#94a3b8">{formatDate(invoice.created)}</text>
 							</box>
-							{/* Customer */}
-							<box style={{ width: COL.customer }}>
-								<text fg={isSelected ? "#ffffff" : "#e2e8f0"}>
-									{(invoice.customerName || invoice.customerEmail || "Unknown")
-										.slice(0, COL.customer - 2)}
-								</text>
-							</box>
 							{/* Status */}
 							<box style={{ width: COL.status }}>
 								<text fg={getStatusColor(invoice.status)}>
 									{invoice.status}
 								</text>
 							</box>
+							{/* Client */}
+							<box style={{ flexGrow: 1 }}>
+								<text fg={isSelected ? "#ffffff" : "#e2e8f0"}>
+									{invoice.customerName || invoice.customerEmail || "Unknown"}
+								</text>
+							</box>
+
 							{/* Amount */}
 							<box style={{ width: COL.amount, alignItems: "flex-end" }}>
 								<text fg="#10b981">
@@ -288,10 +272,6 @@ export function InvoicesView({
 					);
 				})}
 			</scrollbox>
-
-			{/* Footer */}
-			<text fg={COLORS.borderOff}>{"─".repeat(72)}</text>
-			<text fg="#64748b">Enter to open in browser | r to refresh</text>
 		</box>
 	);
 }
