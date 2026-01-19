@@ -22,7 +22,7 @@
     "db:studio": "bunx prisma studio",
     "postinstall": "bunx prisma generate",
     "prepublishOnly": "bunx prisma generate",
-    "release": "bunx bumpp"
+    "release": "bunx bumpp && bun publish --access public"
   },
   "keywords": [
     "tui",
