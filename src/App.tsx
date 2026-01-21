@@ -34,6 +34,7 @@ import {
 import { getOrCreateStripeCustomer, createDraftInvoice, listInvoices, clearInvoiceCache, type StripeInvoiceItem } from "./stripe.ts";
 import {
 	getEffectiveTimezone,
+	formatDateInTimezone,
 	type View,
 	type Panel,
 	type InputMode,
@@ -47,6 +48,7 @@ import {
 	type TimeEntry,
 	type TimeEntryWithProject,
 	type WeeklyTimeData,
+	type AllTimersWeekData,
 } from "./types.ts";
 
 function formatDuration(ms: number): string {
@@ -125,6 +127,13 @@ export function App() {
 		  })
 		| null
 	>(null);
+
+	// All Timers State (for viewing all timers paged by week)
+	const [showAllTimers, setShowAllTimers] = useState(false);
+	const [allTimersWeekData, setAllTimersWeekData] = useState<AllTimersWeekData | null>(null);
+	const [allTimersSelectedIndex, setAllTimersSelectedIndex] = useState(0);
+	const [hasOlderWeeks, setHasOlderWeeks] = useState(false);
+	const [hasNewerWeeks, setHasNewerWeeks] = useState(false);
 
 	// Customer State
 	const [customerList, setCustomerList] = useState<Customer[]>([]);
@@ -293,6 +302,56 @@ export function App() {
 		}
 	}, [selectedTimesheetGroupIndex, selectedTimeEntryIndex]);
 
+	// Helper function to get the start of a week (Sunday)
+	const getWeekStart = useCallback((date: Date): Date => {
+		const d = new Date(date);
+		d.setHours(0, 0, 0, 0);
+		d.setDate(d.getDate() - d.getDay());
+		return d;
+	}, []);
+
+	// Load all timers for a specific week
+	const loadAllTimers = useCallback(async (weekStart?: Date) => {
+		const currentWeekStart = weekStart ?? getWeekStart(new Date());
+		const weekEnd = new Date(currentWeekStart);
+		weekEnd.setDate(weekEnd.getDate() + 7);
+
+		const entries = await timeEntries.getAllForWeek(currentWeekStart);
+
+		// Calculate total duration
+		let totalMs = 0;
+		for (const entry of entries) {
+			if (entry.endTime) {
+				totalMs += new Date(entry.endTime).getTime() - new Date(entry.startTime).getTime();
+			}
+		}
+
+		setAllTimersWeekData({
+			weekStart: currentWeekStart,
+			weekEnd,
+			entries: entries as TimeEntryWithProject[],
+			totalMs,
+		});
+
+		// Check if there are older weeks
+		const oldestDate = await timeEntries.getOldestEntryDate();
+		if (oldestDate) {
+			const oldestWeekStart = getWeekStart(new Date(oldestDate));
+			setHasOlderWeeks(oldestWeekStart < currentWeekStart);
+		} else {
+			setHasOlderWeeks(false);
+		}
+
+		// Check if there are newer weeks (current week start is before today's week start)
+		const todayWeekStart = getWeekStart(new Date());
+		setHasNewerWeeks(currentWeekStart < todayWeekStart);
+
+		// Adjust selection if needed
+		if (allTimersSelectedIndex >= entries.length) {
+			setAllTimersSelectedIndex(Math.max(0, entries.length - 1));
+		}
+	}, [getWeekStart, allTimersSelectedIndex]);
+
 	// Initial load
 	useEffect(() => {
 		loadProjects();
@@ -317,9 +376,13 @@ export function App() {
 	// Reload timesheets when on timesheets view
 	useEffect(() => {
 		if (currentView === "timesheets") {
-			loadTimesheets();
+			if (showAllTimers) {
+				loadAllTimers(allTimersWeekData?.weekStart);
+			} else {
+				loadTimesheets();
+			}
 		}
-	}, [currentView]);
+	}, [currentView, showAllTimers]);
 
 	// Load invoices when on invoices view
 	useEffect(() => {
@@ -384,7 +447,11 @@ export function App() {
 
 		// Refresh timesheets if currently viewing them
 		if (currentView === "timesheets") {
-			loadTimesheets();
+			if (showAllTimers) {
+				loadAllTimers(allTimersWeekData?.weekStart);
+			} else {
+				loadTimesheets();
+			}
 		}
 	};
 
@@ -806,6 +873,84 @@ export function App() {
 	};
 
 	const handleTimesheetKeyboard = (key: { name: string }) => {
+		// Toggle between default timesheets and all timers view
+		if (key.name === "a") {
+			setShowAllTimers((prev) => {
+				const newValue = !prev;
+				if (newValue) {
+					showMessage("Showing all timers by week");
+					loadAllTimers();
+				} else {
+					showMessage("Showing billable timesheets");
+					loadTimesheets();
+				}
+				return newValue;
+			});
+			return;
+		}
+
+		// Handle all timers mode
+		if (showAllTimers) {
+			if (!allTimersWeekData) return;
+			const maxIndex = allTimersWeekData.entries.length - 1;
+
+			// Navigation within entries
+			if (key.name === "j" || key.name === "down") {
+				setAllTimersSelectedIndex((i) => Math.min(i + 1, maxIndex));
+				return;
+			}
+			if (key.name === "k" || key.name === "up") {
+				setAllTimersSelectedIndex((i) => Math.max(i - 1, 0));
+				return;
+			}
+
+			// Week navigation
+			if (key.name === "[" && hasOlderWeeks) {
+				const prevWeekStart = new Date(allTimersWeekData.weekStart);
+				prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+				loadAllTimers(prevWeekStart);
+				setAllTimersSelectedIndex(0);
+				return;
+			}
+			if (key.name === "]" && hasNewerWeeks) {
+				const nextWeekStart = new Date(allTimersWeekData.weekStart);
+				nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+				loadAllTimers(nextWeekStart);
+				setAllTimersSelectedIndex(0);
+				return;
+			}
+
+			// Edit entry
+			if (key.name === "e") {
+				const entry = allTimersWeekData.entries[allTimersSelectedIndex];
+				if (entry) {
+					setEditingTimeEntry(entry as typeof editingTimeEntry);
+					setInputMode("edit_time_entry");
+				}
+				return;
+			}
+
+			// Delete entry
+			if (key.name === "d") {
+				const entry = allTimersWeekData.entries[allTimersSelectedIndex];
+				if (entry) {
+					setConfirmMessage(
+						`Delete time entry from ${entry.project.name}?`,
+					);
+					setConfirmAction(() => () => {
+						timeEntries.delete(entry.id).then(() => {
+							showMessage("Time entry deleted");
+							loadAllTimers(allTimersWeekData.weekStart);
+						});
+					});
+				}
+				return;
+			}
+
+			return;
+		}
+
+		// Default timesheets mode
 		const currentGroup = timesheetGroups[selectedTimesheetGroupIndex];
 		if (!currentGroup) return;
 
@@ -1134,7 +1279,11 @@ export function App() {
 		showMessage("Time entry updated");
 		setInputMode(null);
 		setEditingTimeEntry(null);
-		loadTimesheets();
+		if (showAllTimers) {
+			loadAllTimers(allTimersWeekData?.weekStart);
+		} else {
+			loadTimesheets();
+		}
 	};
 
 	const handleCreateInvoice = async () => {
@@ -1284,6 +1433,11 @@ export function App() {
 						selectedEntryIds={selectedTimeEntryIds}
 						focused={true}
 						timezone={getEffectiveTimezone(appSettings)}
+						showAllTimers={showAllTimers}
+						allTimersWeekData={allTimersWeekData}
+						allTimersSelectedIndex={allTimersSelectedIndex}
+						hasOlderWeeks={hasOlderWeeks}
+						hasNewerWeeks={hasNewerWeeks}
 					/>
 				)}
 
@@ -1329,6 +1483,21 @@ export function App() {
 				timerRunning={!!runningTimer}
 				currentView={currentView}
 				activePanel={activePanel}
+				showAllTimers={currentView === "timesheets" ? showAllTimers : undefined}
+				allTimersWeekRange={
+					currentView === "timesheets" && showAllTimers && allTimersWeekData
+						? (() => {
+								const tz = getEffectiveTimezone(appSettings);
+								const startStr = formatDateInTimezone(allTimersWeekData.weekStart, tz);
+								const endDate = new Date(allTimersWeekData.weekEnd);
+								endDate.setDate(endDate.getDate() - 1);
+								const endStr = formatDateInTimezone(endDate, tz);
+								return `${startStr} - ${endStr}`;
+						  })()
+						: undefined
+				}
+				hasOlderWeeks={currentView === "timesheets" && showAllTimers ? hasOlderWeeks : undefined}
+				hasNewerWeeks={currentView === "timesheets" && showAllTimers ? hasNewerWeeks : undefined}
 			/>
 
 			{/* Modals */}

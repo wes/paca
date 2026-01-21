@@ -566,6 +566,42 @@ export const timeEntries = {
       data: { invoiceId },
     });
   },
+
+  async getAllForWeek(weekStart: Date) {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    return db.timeEntry.findMany({
+      where: {
+        endTime: { not: null },
+        startTime: {
+          gte: weekStart,
+          lt: weekEnd,
+        },
+      },
+      orderBy: { startTime: "desc" },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            hourlyRate: true,
+            customer: true,
+          },
+        },
+      },
+    });
+  },
+
+  async getOldestEntryDate() {
+    const oldest = await db.timeEntry.findFirst({
+      where: { endTime: { not: null } },
+      orderBy: { startTime: "asc" },
+      select: { startTime: true },
+    });
+    return oldest?.startTime ?? null;
+  },
 };
 
 // Settings operations

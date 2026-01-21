@@ -295,6 +295,13 @@ export interface TimesheetGroup {
 	totalAmount: number;
 }
 
+export interface AllTimersWeekData {
+	weekStart: Date;
+	weekEnd: Date;
+	entries: TimeEntryWithProject[];
+	totalMs: number;
+}
+
 export interface ProjectWithCustomer extends Project {
 	customer: Customer | null;
 }

@@ -1,6 +1,7 @@
 import {
 	COLORS,
 	type TimesheetGroup,
+	type AllTimersWeekData,
 	formatDateInTimezone,
 	formatTimeInTimezone,
 } from "../types.ts";
@@ -12,6 +13,12 @@ interface TimesheetViewProps {
 	selectedEntryIds: Set<string>;
 	focused: boolean;
 	timezone: string;
+	// All timers mode props
+	showAllTimers?: boolean;
+	allTimersWeekData?: AllTimersWeekData | null;
+	allTimersSelectedIndex?: number;
+	hasOlderWeeks?: boolean;
+	hasNewerWeeks?: boolean;
 }
 
 function formatDuration(ms: number): string {
@@ -29,6 +36,14 @@ function formatCurrency(amount: number): string {
 	return `$${amount.toFixed(2)}`;
 }
 
+function formatWeekRange(weekStart: Date, weekEnd: Date, timezone: string): string {
+	const startStr = formatDateInTimezone(weekStart, timezone);
+	const endDate = new Date(weekEnd);
+	endDate.setDate(endDate.getDate() - 1); // weekEnd is exclusive, so show the last day of the week
+	const endStr = formatDateInTimezone(endDate, timezone);
+	return `${startStr} - ${endStr}`;
+}
+
 // Column widths for table layout
 const COL = {
 	checkbox: 4, // [x] + space
@@ -36,6 +51,7 @@ const COL = {
 	time: 22, // "9:00 AM - 5:00 PM" + space
 	duration: 9, // "10h 30m" + space
 	amount: 10, // "$1000.00" + space
+	project: 15, // Project name
 };
 
 export function TimesheetView({
@@ -45,7 +61,149 @@ export function TimesheetView({
 	selectedEntryIds,
 	focused,
 	timezone,
+	showAllTimers = false,
+	allTimersWeekData,
+	allTimersSelectedIndex = 0,
+	hasOlderWeeks = false,
+	hasNewerWeeks = false,
 }: TimesheetViewProps) {
+	// All Timers Mode
+	if (showAllTimers) {
+		return (
+			<box
+				style={{
+					flexGrow: 1,
+					flexDirection: "column",
+					padding: 1,
+				}}
+			>
+				{/* Header with week navigation */}
+				<box
+					style={{
+						flexDirection: "row",
+						justifyContent: "space-between",
+						marginBottom: 1,
+					}}
+				>
+					<text>
+						<span fg="#ffffff" attributes="bold">All Timers</span>
+						<span fg="#64748b"> (press 'a' to show billable only)</span>
+					</text>
+					<text fg="#94a3b8">
+						{hasOlderWeeks ? "[" : " "}
+						{" ← Week → "}
+						{hasNewerWeeks ? "]" : " "}
+					</text>
+				</box>
+
+				{/* Week info bar - always show when we have week data */}
+				{allTimersWeekData && (
+					<box
+						style={{
+							flexDirection: "row",
+							justifyContent: "space-between",
+							backgroundColor: "#1e293b",
+							paddingLeft: 1,
+							paddingRight: 1,
+							marginBottom: 1,
+						}}
+					>
+						<text fg="#ffffff">
+							{formatWeekRange(allTimersWeekData.weekStart, allTimersWeekData.weekEnd, timezone)}
+						</text>
+						<text>
+							<span fg="#94a3b8">Total: </span>
+							<span fg="#10b981" attributes="bold">
+								{formatDuration(allTimersWeekData.totalMs)}
+							</span>
+						</text>
+					</box>
+				)}
+
+				{!allTimersWeekData || allTimersWeekData.entries.length === 0 ? (
+					<box
+						style={{
+							flexGrow: 1,
+							justifyContent: "center",
+							alignItems: "center",
+						}}
+					>
+						<text fg="#64748b">No time entries for this week</text>
+					</box>
+				) : (
+					<scrollbox focused={focused} style={{ flexGrow: 1 }}>
+						{allTimersWeekData.entries.map((entry, index) => {
+							const isSelected = index === allTimersSelectedIndex;
+							const duration = entry.endTime
+								? new Date(entry.endTime).getTime() -
+									new Date(entry.startTime).getTime()
+								: 0;
+							const rate = entry.project.hourlyRate ?? 0;
+							const amount = (duration / 3600000) * rate;
+
+							const dateStr = formatDateInTimezone(entry.startTime, timezone);
+							const timeStart = formatTimeInTimezone(entry.startTime, timezone);
+							const timeEnd = entry.endTime
+								? formatTimeInTimezone(entry.endTime, timezone)
+								: "";
+							const timeRange = timeEnd
+								? `${timeStart} - ${timeEnd}`
+								: timeStart;
+							const durationStr = formatDuration(duration);
+							const amountStr = rate > 0 ? formatCurrency(amount) : "-";
+
+							return (
+								<box
+									key={entry.id}
+									style={{
+										flexDirection: "row",
+										backgroundColor: isSelected
+											? COLORS.selectedRowBg
+											: "transparent",
+										paddingLeft: 1,
+										paddingRight: 1,
+									}}
+								>
+									{/* Date */}
+									<box style={{ width: COL.date }}>
+										<text fg="#94a3b8">{dateStr}</text>
+									</box>
+									{/* Time Range */}
+									<box style={{ width: COL.time }}>
+										<text fg="#64748b">{timeRange}</text>
+									</box>
+									{/* Duration */}
+									<box style={{ width: COL.duration }}>
+										<text fg="#94a3b8">{durationStr}</text>
+									</box>
+									{/* Project */}
+									<box style={{ width: COL.project }}>
+										<text fg={entry.project.color}>
+											{entry.project.name.length > 13
+												? entry.project.name.substring(0, 12) + "…"
+												: entry.project.name}
+										</text>
+									</box>
+									{/* Amount */}
+									<box style={{ width: COL.amount }}>
+										<text fg={rate > 0 ? "#10b981" : "#64748b"}>{amountStr}</text>
+									</box>
+									{/* Description */}
+									<box style={{ flexGrow: 1 }}>
+										<text fg={isSelected ? "#ffffff" : "#e2e8f0"}>
+											{entry.description || ""}
+										</text>
+									</box>
+								</box>
+							);
+						})}
+					</scrollbox>
+				)}
+			</box>
+		);
+	}
+
+	// Default Timesheets Mode (billable only)
 	if (groups.length === 0) {
 		return (
 			<box
@@ -61,7 +219,10 @@ export function TimesheetView({
 						justifyContent: "space-between",
 					}}
 				>
-					<text fg="#ffffff">Timesheets</text>
+					<text>
+						<span fg="#ffffff">Timesheets</span>
+						<span fg="#64748b"> (press 'a' to show all timers)</span>
+					</text>
 				</box>
 
 				<box
@@ -85,6 +246,20 @@ export function TimesheetView({
 				padding: 1,
 			}}
 		>
+			{/* Header */}
+			<box
+				style={{
+					flexDirection: "row",
+					justifyContent: "space-between",
+					marginBottom: 1,
+				}}
+			>
+				<text>
+					<span fg="#ffffff" attributes="bold">Timesheets</span>
+					<span fg="#64748b"> (press 'a' to show all timers)</span>
+				</text>
+			</box>
+
 			<scrollbox focused={focused} style={{ flexGrow: 1 }}>
 				{groups.map((group, groupIndex) => {
 					const isSelectedGroup = groupIndex === selectedGroupIndex;
