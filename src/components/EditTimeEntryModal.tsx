@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useKeyboard } from "@opentui/react";
-import { COLORS, type TimeEntry } from "../types";
+import { CATPPUCCIN_MOCHA, type TimeEntry, type Theme } from "../types";
 import Modal from "./Modal";
 import { DateTimePicker } from "./DateTimePicker";
 import { usePaste } from "../hooks/usePaste";
@@ -12,6 +12,7 @@ interface EditTimeEntryModalProps {
 	timezone: string;
 	onSubmit: (startTime: Date, endTime: Date, description: string) => void;
 	onCancel: () => void;
+	theme?: Theme;
 }
 
 function formatDuration(ms: number): string {
@@ -32,7 +33,9 @@ export function EditTimeEntryModal({
 	timezone,
 	onSubmit,
 	onCancel,
+	theme = CATPPUCCIN_MOCHA,
 }: EditTimeEntryModalProps) {
+	const colors = theme.colors;
 	const startDate =
 		entry.startTime instanceof Date
 			? entry.startTime
@@ -187,11 +190,11 @@ export function EditTimeEntryModal({
 
 	// Format duration change
 	let changeText = "";
-	let changeColor = "#64748b";
+	let changeColor = colors.textMuted;
 	if (durationChangeMs !== 0) {
 		const sign = durationChangeMs > 0 ? "+" : "-";
 		changeText = ` (${sign}${formatDuration(Math.abs(durationChangeMs))})`;
-		changeColor = durationChangeMs > 0 ? "#10b981" : "#ef4444";
+		changeColor = durationChangeMs > 0 ? colors.success : colors.error;
 	}
 
 	// Calculate amount if hourly rate exists
@@ -202,23 +205,23 @@ export function EditTimeEntryModal({
 	}
 
 	return (
-		<Modal title="Edit Time Entry" height={23}>
+		<Modal title="Edit Time Entry" height={23} theme={theme}>
 			<box style={{ flexDirection: "row", marginTop: 1, gap: 2 }}>
 				<text>
 					<span fg={entry.project.color}>{entry.project.name}</span>
 				</text>
 				<text>
-					<span fg={newDurationMs > 0 ? "#ffffff" : "#ef4444"}>
+					<span fg={newDurationMs > 0 ? colors.textPrimary : colors.error}>
 						{newDurationMs > 0 ? formatDuration(newDurationMs) : "0m"}
 					</span>
 					<span fg={changeColor}>{changeText}</span>
-					{amountPreview && <span fg="#10b981"> ({amountPreview})</span>}
+					{amountPreview && <span fg={colors.success}> ({amountPreview})</span>}
 				</text>
 			</box>
 
 			{error && (
 				<box style={{ marginTop: 1 }}>
-					<text fg="#ef4444">{error}</text>
+					<text fg={colors.error}>{error}</text>
 				</box>
 			)}
 
@@ -232,7 +235,7 @@ export function EditTimeEntryModal({
 				}}
 			>
 				<box style={{ width: 11 }}>
-					<text fg={activeSection === "start" ? "#ffffff" : "#94a3b8"}>
+					<text fg={activeSection === "start" ? colors.textPrimary : colors.accentSecondary}>
 						Start Time
 					</text>
 				</box>
@@ -249,7 +252,7 @@ export function EditTimeEntryModal({
 				}}
 			>
 				<box style={{ width: 11 }}>
-					<text fg={activeSection === "end" ? "#ffffff" : "#94a3b8"}>
+					<text fg={activeSection === "end" ? colors.textPrimary : colors.accentSecondary}>
 						End Time
 					</text>
 				</box>
@@ -261,15 +264,15 @@ export function EditTimeEntryModal({
 				style={{ flexDirection: "column", marginTop: 1 }}
 			>
 				<box style={{ width: "100%" }}>
-					<text fg="#fff">Description</text>
+					<text fg={colors.textPrimary}>Description</text>
 				</box>
 				<box
 					style={{
 						border: true,
 						borderColor:
 							activeSection === "description"
-								? COLORS.border
-								: COLORS.borderOff,
+								? colors.border
+								: colors.borderOff,
 						width: "100%",
 						height: 3,
 					}}
@@ -286,7 +289,7 @@ export function EditTimeEntryModal({
 			</box>
 
 			<box style={{ marginTop: 1 }}>
-				<text fg="#64748b">Tab: next field | Enter: save | Esc: cancel</text>
+				<text fg={colors.textMuted}>Tab: next field | Enter: save | Esc: cancel</text>
 			</box>
 		</Modal>
 	);

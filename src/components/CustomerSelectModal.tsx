@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useKeyboard } from "@opentui/react";
-import { COLORS, type Customer } from "../types.ts";
+import { CATPPUCCIN_MOCHA, type Customer, type Theme } from "../types.ts";
 
 interface CustomerSelectModalProps {
   customers: Customer[];
@@ -10,6 +10,7 @@ interface CustomerSelectModalProps {
   onCreateNew: () => void;
   onEdit: (customer: Customer) => void;
   onCancel: () => void;
+  theme?: Theme;
 }
 
 export function CustomerSelectModal({
@@ -20,7 +21,9 @@ export function CustomerSelectModal({
   onCreateNew,
   onEdit,
   onCancel,
+  theme = CATPPUCCIN_MOCHA,
 }: CustomerSelectModalProps) {
+  const colors = theme.colors;
   // Create items list: customers + "None" option + "Create new" option
   const items: { id: string | null; label: string; isAction: boolean; customer?: Customer }[] = [
     { id: null, label: "(No customer)", isAction: false },
@@ -89,17 +92,17 @@ export function CustomerSelectModal({
         marginTop: -Math.floor(modalHeight / 2),
         marginLeft: -30,
         border: true,
-        borderColor: "#8b5cf6",
+        borderColor: colors.border,
         flexDirection: "column",
-        backgroundColor: COLORS.bg,
+        backgroundColor: colors.bg,
         padding: 1,
         zIndex: 99999,
       }}
     >
-      <text fg="#ffffff" attributes="bold">
+      <text fg={colors.textPrimary} attributes="bold">
         Link Customer to Project
       </text>
-      <text fg="#94a3b8">{projectName}</text>
+      <text fg={colors.accentSecondary}>{projectName}</text>
       <box style={{ marginTop: 1, flexGrow: 1 }}>
         <scrollbox focused style={{ flexGrow: 1 }}>
           {items.map((item, index) => (
@@ -109,23 +112,23 @@ export function CustomerSelectModal({
                 paddingLeft: 1,
                 paddingRight: 1,
                 backgroundColor:
-                  index === selectedIndex ? "#1e40af" : "transparent",
+                  index === selectedIndex ? colors.selectedRowBg : "transparent",
               }}
             >
               <text>
                 {item.id === currentCustomerId && (
-                  <span fg="#10b981">[*] </span>
+                  <span fg={colors.success}>[*] </span>
                 )}
                 {item.id !== currentCustomerId && item.id !== "__create__" && (
-                  <span fg="#64748b">[ ] </span>
+                  <span fg={colors.textMuted}>[ ] </span>
                 )}
                 <span
                   fg={
                     item.isAction
-                      ? "#10b981"
+                      ? colors.success
                       : index === selectedIndex
-                        ? "#ffffff"
-                        : "#e2e8f0"
+                        ? colors.selectedText
+                        : colors.textPrimary
                   }
                   attributes={index === selectedIndex ? "bold" : undefined}
                 >
@@ -136,7 +139,7 @@ export function CustomerSelectModal({
           ))}
         </scrollbox>
       </box>
-      <text fg="#64748b">Enter: select | n: new | e: edit | Esc: cancel</text>
+      <text fg={colors.textMuted}>Enter: select | n: new | e: edit | Esc: cancel</text>
     </box>
   );
 }

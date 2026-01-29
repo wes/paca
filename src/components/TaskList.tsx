@@ -1,12 +1,12 @@
-import type { Task } from "../types.ts";
+import type { Task, Theme } from "../types.ts";
 import { STATUS_ICONS, type TaskStatus } from "../types.ts";
-import { COLORS } from "../types.ts";
 
 interface TaskListProps {
 	tasks: Task[];
 	selectedIndex: number;
 	focused: boolean;
 	projectName?: string;
+	theme: Theme;
 }
 
 export function TaskList({
@@ -14,7 +14,10 @@ export function TaskList({
 	selectedIndex,
 	focused,
 	projectName,
+	theme,
 }: TaskListProps) {
+	const colors = theme.colors;
+
 	const formatDueDate = (date: Date | null) => {
 		if (!date) return null;
 		const d = new Date(date);
@@ -24,22 +27,22 @@ export function TaskList({
 		);
 
 		if (diffDays < 0)
-			return { text: `${Math.abs(diffDays)}d overdue`, color: "#ef4444" };
-		if (diffDays === 0) return { text: "Today", color: "#f59e0b" };
-		if (diffDays === 1) return { text: "Tomorrow", color: "#f59e0b" };
-		if (diffDays <= 7) return { text: `${diffDays}d`, color: "#3b82f6" };
+			return { text: `${Math.abs(diffDays)}d overdue`, color: colors.error };
+		if (diffDays === 0) return { text: "Today", color: colors.warning };
+		if (diffDays === 1) return { text: "Tomorrow", color: colors.warning };
+		if (diffDays <= 7) return { text: `${diffDays}d`, color: colors.info };
 		return {
 			text: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-			color: "#64748b",
+			color: colors.textSecondary,
 		};
 	};
 
 	const getPriorityIndicator = (priority: string) => {
 		const indicators: Record<string, { symbol: string; color: string }> = {
-			urgent: { symbol: "!", color: "#ef4444" },
-			high: { symbol: "!", color: "#f59e0b" },
-			medium: { symbol: "!", color: "#3b82f6" },
-			low: { symbol: " ", color: "#64748b" },
+			urgent: { symbol: "!", color: colors.priorityUrgent },
+			high: { symbol: "!", color: colors.priorityHigh },
+			medium: { symbol: "!", color: colors.priorityMedium },
+			low: { symbol: " ", color: colors.priorityLow },
 		};
 		return indicators[priority] || indicators.medium;
 	};
@@ -49,7 +52,7 @@ export function TaskList({
 			title={projectName ? `Tasks - ${projectName}` : "Tasks"}
 			style={{
 				border: true,
-				borderColor: focused ? COLORS.border : COLORS.borderOff,
+				borderColor: focused ? colors.border : colors.borderOff,
 				flexGrow: 2,
 				flexDirection: "column",
 			}}
@@ -62,10 +65,10 @@ export function TaskList({
 						justifyContent: "center",
 					}}
 				>
-					<text fg="#64748b">
+					<text fg={colors.textSecondary}>
 						{projectName ? "No tasks in this project" : "Select a project"}
 					</text>
-					{projectName && <text fg="#475569">Press 'n' to create a task</text>}
+					{projectName && <text fg={colors.textMuted}>Press 'n' to create a task</text>}
 				</box>
 			) : (
 				<scrollbox focused={focused} style={{ flexGrow: 1 }}>
@@ -84,7 +87,7 @@ export function TaskList({
 									paddingRight: 1,
 									backgroundColor:
 										isSelected && focused
-											? COLORS.selectedRowBg
+											? colors.selectedRowBg
 											: "transparent",
 								}}
 							>
@@ -98,10 +101,10 @@ export function TaskList({
 										<text
 											fg={
 												task.status === "done"
-													? "#10b981"
+													? colors.success
 													: task.status === "in_progress"
-														? "#f59e0b"
-														: "#64748b"
+														? colors.warning
+														: colors.textSecondary
 											}
 										>
 											{statusIcon}{" "}
@@ -114,10 +117,10 @@ export function TaskList({
 										<text
 											fg={
 												task.status === "done"
-													? "#64748b"
+													? colors.textSecondary
 													: isSelected
-														? "#ffffff"
-														: "#e2e8f0"
+														? colors.selectedText
+														: colors.textPrimary
 											}
 											attributes={
 												task.status === "done"

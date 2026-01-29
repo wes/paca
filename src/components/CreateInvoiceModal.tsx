@@ -1,7 +1,9 @@
 import { useKeyboard } from "@opentui/react";
 import {
+	CATPPUCCIN_MOCHA,
 	type Customer,
 	type TimeEntryWithProject,
+	type Theme,
 	formatDateInTimezone,
 } from "../types.ts";
 import Modal from "./Modal.tsx";
@@ -16,6 +18,7 @@ interface CreateInvoiceModalProps {
 	hasStripeKey: boolean;
 	onConfirm: () => void;
 	onCancel: () => void;
+	theme?: Theme;
 }
 
 function formatDuration(ms: number): string {
@@ -44,7 +47,10 @@ export function CreateInvoiceModal({
 	hasStripeKey,
 	onConfirm,
 	onCancel,
+	theme = CATPPUCCIN_MOCHA,
 }: CreateInvoiceModalProps) {
+	const colors = theme.colors;
+
 	useKeyboard((key) => {
 		if (key.name === "escape") {
 			onCancel();
@@ -97,20 +103,20 @@ export function CreateInvoiceModal({
 			: baseHeight + lineItemsHeight;
 
 	return (
-		<Modal title="Create Stripe Invoice" height={Math.max(modalHeight, 20)}>
+		<Modal title="Create Stripe Invoice" height={Math.max(modalHeight, 20)} theme={theme}>
 			{/* Customer info */}
 			{customer && (
 				<box style={{ flexDirection: "row", marginTop: 1, gap: 1 }}>
-					<text fg="#8b5cf6" attributes="bold">
+					<text fg={colors.accentSecondary} attributes="bold">
 						{customer.name}
 					</text>
-					<text fg="#64748b">{customer.email}</text>
+					<text fg={colors.textMuted}>{customer.email}</text>
 				</box>
 			)}
 
 			{!customer && (
 				<box style={{ marginTop: 1 }}>
-					<text fg="#ef4444">
+					<text fg={colors.error}>
 						This project has no customer linked. Please link a customer first
 						using the 'c' key in the Projects view.
 					</text>
@@ -119,7 +125,7 @@ export function CreateInvoiceModal({
 
 			{!hasStripeKey && customer && (
 				<box style={{ marginTop: 1 }}>
-					<text fg="#ef4444">
+					<text fg={colors.error}>
 						No Stripe API key configured. Add one in Settings to create
 						invoices.
 					</text>
@@ -129,22 +135,22 @@ export function CreateInvoiceModal({
 			{customer && hasStripeKey && (
 				<>
 					{/* Line items header */}
-					<text fg="#334155" style={{ marginTop: 1 }}>
+					<text fg={colors.borderSubtle} style={{ marginTop: 1 }}>
 						{"─".repeat(56)}
 					</text>
 					<box style={{ flexDirection: "row", gap: 1 }}>
 						<box style={{ width: 8 }}>
-							<text fg="#94a3b8">Date</text>
+							<text fg={colors.accentSecondary}>Date</text>
 						</box>
 						<box style={{ flexGrow: 1 }}>
-							<text fg="#94a3b8">Description</text>
+							<text fg={colors.accentSecondary}>Description</text>
 						</box>
 						<box style={{ width: 8 }}>
-							<text fg="#94a3b8">Hours</text>
+							<text fg={colors.accentSecondary}>Hours</text>
 						</box>
 						{hourlyRate != null && (
 							<box style={{ width: 10, alignItems: "flex-end" }}>
-								<text fg="#94a3b8">Amount</text>
+								<text fg={colors.accentSecondary}>Amount</text>
 							</box>
 						)}
 					</box>
@@ -154,21 +160,21 @@ export function CreateInvoiceModal({
 						{lineItems.map((item, idx) => (
 							<box key={idx} style={{ flexDirection: "row", gap: 1 }}>
 								<box style={{ width: 8 }}>
-									<text fg="#64748b">{item.date}</text>
+									<text fg={colors.textMuted}>{item.date}</text>
 								</box>
 								<box style={{ flexGrow: 1 }}>
-									<text fg="#e2e8f0">
+									<text fg={colors.textPrimary}>
 										{item.description.length > 30
 											? `${item.description.slice(0, 27)}...`
 											: item.description}
 									</text>
 								</box>
 								<box style={{ width: 8 }}>
-									<text fg="#94a3b8">{item.hours}</text>
+									<text fg={colors.accentSecondary}>{item.hours}</text>
 								</box>
 								{hourlyRate != null && (
 									<box style={{ width: 10, alignItems: "flex-end" }}>
-										<text fg="#10b981">${item.amount.toFixed(2)}</text>
+										<text fg={colors.success}>${item.amount.toFixed(2)}</text>
 									</box>
 								)}
 							</box>
@@ -176,26 +182,26 @@ export function CreateInvoiceModal({
 					</scrollbox>
 
 					{/* Totals */}
-					<text fg="#334155">{"─".repeat(56)}</text>
+					<text fg={colors.borderSubtle}>{"─".repeat(56)}</text>
 					<box style={{ flexDirection: "row", gap: 1 }}>
 						<box style={{ width: 8 }}>
-							<text fg="#ffffff" attributes="bold">
+							<text fg={colors.textPrimary} attributes="bold">
 								Total
 							</text>
 						</box>
 						<box style={{ flexGrow: 1 }}>
-							<text fg="#94a3b8">
+							<text fg={colors.accentSecondary}>
 								{entries.length} {entries.length === 1 ? "entry" : "entries"}
 							</text>
 						</box>
 						<box style={{ width: 8 }}>
-							<text fg="#ffffff" attributes="bold">
+							<text fg={colors.textPrimary} attributes="bold">
 								{totalHours.toFixed(2)}
 							</text>
 						</box>
 						{hourlyRate != null && (
 							<box style={{ width: 10, alignItems: "flex-end" }}>
-								<text fg="#10b981" attributes="bold">
+								<text fg={colors.success} attributes="bold">
 									${totalAmount.toFixed(2)}
 								</text>
 							</box>
@@ -204,7 +210,7 @@ export function CreateInvoiceModal({
 
 					{hourlyRate != null && (
 						<box style={{ marginTop: 1 }}>
-							<text fg="#64748b">Rate: ${hourlyRate.toFixed(2)}/hr</text>
+							<text fg={colors.textMuted}>Rate: ${hourlyRate.toFixed(2)}/hr</text>
 						</box>
 					)}
 				</>
@@ -212,7 +218,7 @@ export function CreateInvoiceModal({
 
 			<box style={{ flexGrow: 1 }} />
 
-			<text fg="#64748b">
+			<text fg={colors.textMuted}>
 				{customer && hasStripeKey
 					? "Enter to create draft invoice, Esc to cancel"
 					: "Esc to close"}

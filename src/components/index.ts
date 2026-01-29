@@ -14,3 +14,4 @@ export { CustomerModal } from "./CustomerModal.tsx";
 export { CustomerSelectModal } from "./CustomerSelectModal.tsx";
 export { EditTimeEntryModal } from "./EditTimeEntryModal.tsx";
 export { CreateInvoiceModal } from "./CreateInvoiceModal.tsx";
+export { ThemeSelectModal } from "./ThemeSelectModal.tsx";

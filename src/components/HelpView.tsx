@@ -1,3 +1,9 @@
+import type { Theme } from "../types.ts";
+
+interface HelpViewProps {
+	theme: Theme;
+}
+
 const KEYBINDINGS = [
   {
     category: "Navigation",
@@ -44,7 +50,9 @@ const KEYBINDINGS = [
   },
 ];
 
-export function HelpView() {
+export function HelpView({ theme }: HelpViewProps) {
+  const colors = theme.colors;
+
   return (
     <box
       style={{
@@ -54,7 +62,7 @@ export function HelpView() {
       }}
     >
       <box style={{ marginBottom: 1 }}>
-        <text fg="#64748b">A tui task management and timer</text>
+        <text fg={colors.textSecondary}>A tui task management and timer</text>
       </box>
 
       <box
@@ -71,7 +79,7 @@ export function HelpView() {
             title={section.category}
             style={{
               border: true,
-              borderColor: "#334155",
+              borderColor: colors.borderSubtle,
               padding: 1,
               minWidth: 35,
               flexGrow: 1,
@@ -86,11 +94,11 @@ export function HelpView() {
                 }}
               >
                 <text>
-                  <span fg="#3b82f6" style={{ minWidth: 12 }}>
+                  <span fg={colors.accent} style={{ minWidth: 12 }}>
                     {binding.key}
                   </span>
                 </text>
-                <text fg="#94a3b8">{binding.action}</text>
+                <text fg={colors.textSecondary}>{binding.action}</text>
               </box>
             ))}
           </box>
@@ -102,7 +110,7 @@ export function HelpView() {
           padding: 1,
         }}
       >
-        <text fg="#475569">Database location: ~/.paca/paca.db</text>
+        <text fg={colors.textMuted}>Database location: ~/.paca/paca.db</text>
       </box>
     </box>
   );

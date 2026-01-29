@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useKeyboard } from "@opentui/react";
-import { COLORS, type ProjectWithTaskCounts } from "../types.ts";
+import { CATPPUCCIN_MOCHA, type ProjectWithTaskCounts, type Theme } from "../types.ts";
 import { usePaste } from "../hooks/usePaste";
 import Modal from "./Modal.tsx";
 
@@ -8,16 +8,19 @@ interface ProjectSelectModalProps {
 	projects: ProjectWithTaskCounts[];
 	onSelect: (projectId: string) => void;
 	onCancel: () => void;
+	theme?: Theme;
 }
 
 export function ProjectSelectModal({
 	projects,
 	onSelect,
 	onCancel,
+	theme = CATPPUCCIN_MOCHA,
 }: ProjectSelectModalProps) {
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [searchQuery, setSearchQuery] = useState("");
 	const inputRef = usePaste();
+	const colors = theme.colors;
 
 	const filteredProjects = projects.filter((project) =>
 		project.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -48,11 +51,11 @@ export function ProjectSelectModal({
 	});
 
 	return (
-		<Modal title="Start Timer" height={20}>
+		<Modal title="Start Timer" height={20} theme={theme}>
 			<box
 				style={{
 					border: true,
-					borderColor: "#475569",
+					borderColor: colors.borderSubtle,
 					height: 3,
 					marginBottom: 1,
 				}}
@@ -68,7 +71,7 @@ export function ProjectSelectModal({
 			<box style={{ flexGrow: 1 }}>
 				<scrollbox style={{ flexGrow: 1 }}>
 					{filteredProjects.length === 0 ? (
-						<text fg="#64748b" style={{ paddingLeft: 1 }}>
+						<text fg={colors.textMuted} style={{ paddingLeft: 1 }}>
 							No projects found
 						</text>
 					) : (
@@ -79,19 +82,19 @@ export function ProjectSelectModal({
 									paddingLeft: 1,
 									paddingRight: 1,
 									backgroundColor:
-										index === selectedIndex ? "#1e40af" : "transparent",
+										index === selectedIndex ? colors.selectedRowBg : "transparent",
 								}}
 							>
 								<text>
 									<span fg={project.color}>[*] </span>
 									<span
-										fg={index === selectedIndex ? "#ffffff" : "#e2e8f0"}
+										fg={index === selectedIndex ? colors.selectedText : colors.textPrimary}
 										attributes={index === selectedIndex ? "bold" : undefined}
 									>
 										{project.name}
 									</span>
 									{project.hourlyRate != null && (
-										<span fg="#10b981"> ${project.hourlyRate}/hr</span>
+										<span fg={colors.success}> ${project.hourlyRate}/hr</span>
 									)}
 								</text>
 							</box>
@@ -109,6 +112,7 @@ interface StopTimerModalProps {
 	duration: string;
 	onSubmit: (description: string) => void;
 	onCancel: () => void;
+	theme?: Theme;
 }
 
 export function StopTimerModal({
@@ -117,24 +121,26 @@ export function StopTimerModal({
 	duration,
 	onSubmit,
 	onCancel,
+	theme = CATPPUCCIN_MOCHA,
 }: StopTimerModalProps) {
 	const [description, setDescription] = useState("");
 	const inputRef = usePaste();
+	const colors = theme.colors;
 
 	return (
-		<Modal title="Stop Timer" height={20}>
+		<Modal title="Stop Timer" height={20} theme={theme}>
 			<box style={{ flexDirection: "row", gap: 1, marginTop: 0 }}>
-				<text fg="#ff0000">{projectName}</text>
+				<text fg={colors.error}>{projectName}</text>
 
-				<text fg="#f59e0b">{duration}</text>
+				<text fg={colors.warning}>{duration}</text>
 			</box>
-			<text fg="#94a3b8" style={{ marginTop: 1 }}>
+			<text fg={colors.accentSecondary} style={{ marginTop: 1 }}>
 				What did you work on?
 			</text>
 			<box
 				style={{
 					border: true,
-					borderColor: "#475569",
+					borderColor: colors.borderSubtle,
 					height: 3,
 				}}
 			>
@@ -146,7 +152,7 @@ export function StopTimerModal({
 					onSubmit={() => onSubmit(description)}
 				/>
 			</box>
-			<text fg="#64748b">Enter to save, Esc to cancel</text>
+			<text fg={colors.textMuted}>Enter to save, Esc to cancel</text>
 		</Modal>
 	);
 }

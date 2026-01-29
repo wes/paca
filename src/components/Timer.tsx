@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import type { RunningTimer } from "../types.ts";
+import type { RunningTimer, Theme } from "../types.ts";
 
 interface TimerProps {
   runningTimer: RunningTimer | null;
   onStop: () => void;
+  theme: Theme;
 }
 
 function formatDuration(ms: number): string {
@@ -33,8 +34,9 @@ export function formatDurationHuman(ms: number): string {
   return "<1m";
 }
 
-export function Timer({ runningTimer, onStop }: TimerProps) {
+export function Timer({ runningTimer, onStop, theme }: TimerProps) {
   const [elapsed, setElapsed] = useState(0);
+  const colors = theme.colors;
 
   useEffect(() => {
     if (!runningTimer) {
@@ -56,11 +58,11 @@ export function Timer({ runningTimer, onStop }: TimerProps) {
   if (!runningTimer) {
     return (
       <box style={{ flexDirection: "row", alignItems: "center", gap: 1 }}>
-        <text fg="#64748b">No timer running</text>
+        <text fg={colors.textSecondary}>No timer running</text>
         <text>
-          <span fg="#475569">[</span>
-          <span fg="#10b981">t</span>
-          <span fg="#475569">] Start</span>
+          <span fg={colors.textMuted}>[</span>
+          <span fg={colors.success}>t</span>
+          <span fg={colors.textMuted}>] Start</span>
         </text>
       </box>
     );
@@ -74,21 +76,21 @@ export function Timer({ runningTimer, onStop }: TimerProps) {
   return (
     <box style={{ flexDirection: "row", alignItems: "center", gap: 1 }}>
       <text>
-        <span fg="#ef4444">●</span>
+        <span fg={colors.error}>●</span>
       </text>
       <text fg={runningTimer.project.color} attributes="bold">
         {runningTimer.project.name}
       </text>
-      <text fg="#f59e0b" attributes="bold">
+      <text fg={colors.warning} attributes="bold">
         {formatDuration(elapsed)}
       </text>
       {earnings !== null && (
-        <text fg="#10b981">${earnings.toFixed(2)}</text>
+        <text fg={colors.success}>${earnings.toFixed(2)}</text>
       )}
       <text>
-        <span fg="#475569">[</span>
-        <span fg="#ef4444">s</span>
-        <span fg="#475569">] Stop</span>
+        <span fg={colors.textMuted}>[</span>
+        <span fg={colors.error}>s</span>
+        <span fg={colors.textMuted}>] Stop</span>
       </text>
     </box>
   );

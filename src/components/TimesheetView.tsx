@@ -1,7 +1,7 @@
 import {
-	COLORS,
 	type TimesheetGroup,
 	type AllTimersWeekData,
+	type Theme,
 	formatDateInTimezone,
 	formatTimeInTimezone,
 } from "../types.ts";
@@ -13,6 +13,7 @@ interface TimesheetViewProps {
 	selectedEntryIds: Set<string>;
 	focused: boolean;
 	timezone: string;
+	theme: Theme;
 	// All timers mode props
 	showAllTimers?: boolean;
 	allTimersWeekData?: AllTimersWeekData | null;
@@ -61,12 +62,15 @@ export function TimesheetView({
 	selectedEntryIds,
 	focused,
 	timezone,
+	theme,
 	showAllTimers = false,
 	allTimersWeekData,
 	allTimersSelectedIndex = 0,
 	hasOlderWeeks = false,
 	hasNewerWeeks = false,
 }: TimesheetViewProps) {
+	const colors = theme.colors;
+
 	// All Timers Mode
 	if (showAllTimers) {
 		return (
@@ -86,10 +90,10 @@ export function TimesheetView({
 					}}
 				>
 					<text>
-						<span fg="#ffffff" attributes="bold">All Timers</span>
-						<span fg="#64748b"> (press 'a' to show billable only)</span>
+						<span fg={colors.textPrimary} attributes="bold">All Timers</span>
+						<span fg={colors.textSecondary}> (press 'a' to show billable only)</span>
 					</text>
-					<text fg="#94a3b8">
+					<text fg={colors.textSecondary}>
 						{hasOlderWeeks ? "[" : " "}
 						{" ← Week → "}
 						{hasNewerWeeks ? "]" : " "}
@@ -102,18 +106,18 @@ export function TimesheetView({
 						style={{
 							flexDirection: "row",
 							justifyContent: "space-between",
-							backgroundColor: "#1e293b",
+							backgroundColor: colors.surface,
 							paddingLeft: 1,
 							paddingRight: 1,
 							marginBottom: 1,
 						}}
 					>
-						<text fg="#ffffff">
+						<text fg={colors.textPrimary}>
 							{formatWeekRange(allTimersWeekData.weekStart, allTimersWeekData.weekEnd, timezone)}
 						</text>
 						<text>
-							<span fg="#94a3b8">Total: </span>
-							<span fg="#10b981" attributes="bold">
+							<span fg={colors.textSecondary}>Total: </span>
+							<span fg={colors.success} attributes="bold">
 								{formatDuration(allTimersWeekData.totalMs)}
 							</span>
 						</text>
@@ -128,7 +132,7 @@ export function TimesheetView({
 							alignItems: "center",
 						}}
 					>
-						<text fg="#64748b">No time entries for this week</text>
+						<text fg={colors.textSecondary}>No time entries for this week</text>
 					</box>
 				) : (
 					<scrollbox focused={focused} style={{ flexGrow: 1 }}>
@@ -158,7 +162,7 @@ export function TimesheetView({
 									style={{
 										flexDirection: "row",
 										backgroundColor: isSelected
-											? COLORS.selectedRowBg
+											? colors.selectedRowBg
 											: "transparent",
 										paddingLeft: 1,
 										paddingRight: 1,
@@ -166,15 +170,15 @@ export function TimesheetView({
 								>
 									{/* Date */}
 									<box style={{ width: COL.date }}>
-										<text fg="#94a3b8">{dateStr}</text>
+										<text fg={colors.textSecondary}>{dateStr}</text>
 									</box>
 									{/* Time Range */}
 									<box style={{ width: COL.time }}>
-										<text fg="#64748b">{timeRange}</text>
+										<text fg={colors.textMuted}>{timeRange}</text>
 									</box>
 									{/* Duration */}
 									<box style={{ width: COL.duration }}>
-										<text fg="#94a3b8">{durationStr}</text>
+										<text fg={colors.textSecondary}>{durationStr}</text>
 									</box>
 									{/* Project */}
 									<box style={{ width: COL.project }}>
@@ -186,11 +190,11 @@ export function TimesheetView({
 									</box>
 									{/* Amount */}
 									<box style={{ width: COL.amount }}>
-										<text fg={rate > 0 ? "#10b981" : "#64748b"}>{amountStr}</text>
+										<text fg={rate > 0 ? colors.success : colors.textMuted}>{amountStr}</text>
 									</box>
 									{/* Description */}
 									<box style={{ flexGrow: 1 }}>
-										<text fg={isSelected ? "#ffffff" : "#e2e8f0"}>
+										<text fg={isSelected ? colors.selectedText : colors.textPrimary}>
 											{entry.description || ""}
 										</text>
 									</box>
@@ -220,8 +224,8 @@ export function TimesheetView({
 					}}
 				>
 					<text>
-						<span fg="#ffffff">Timesheets</span>
-						<span fg="#64748b"> (press 'a' to show all timers)</span>
+						<span fg={colors.textPrimary}>Timesheets</span>
+						<span fg={colors.textSecondary}> (press 'a' to show all timers)</span>
 					</text>
 				</box>
 
@@ -232,7 +236,7 @@ export function TimesheetView({
 						alignItems: "center",
 					}}
 				>
-					<text fg="#64748b">No uninvoiced time entries</text>
+					<text fg={colors.textSecondary}>No uninvoiced time entries</text>
 				</box>
 			</box>
 		);
@@ -255,8 +259,8 @@ export function TimesheetView({
 				}}
 			>
 				<text>
-					<span fg="#ffffff" attributes="bold">Timesheets</span>
-					<span fg="#64748b"> (press 'a' to show all timers)</span>
+					<span fg={colors.textPrimary} attributes="bold">Timesheets</span>
+					<span fg={colors.textSecondary}> (press 'a' to show all timers)</span>
 				</text>
 			</box>
 
@@ -271,7 +275,7 @@ export function TimesheetView({
 								style={{
 									flexDirection: "row",
 									justifyContent: "space-between",
-									backgroundColor: isSelectedGroup ? "#1e293b" : "transparent",
+									backgroundColor: isSelectedGroup ? colors.surface : "transparent",
 									paddingLeft: 1,
 									paddingRight: 1,
 									marginTop: groupIndex > 0 ? 1 : 0,
@@ -282,16 +286,16 @@ export function TimesheetView({
 										{group.project.name}
 									</span>
 									{group.project.customer && (
-										<span fg="#8b5cf6"> ({group.project.customer.name})</span>
+										<span fg={colors.accentSecondary}> ({group.project.customer.name})</span>
 									)}
 									{!group.project.customer && (
-										<span fg="#ef4444"> (No customer)</span>
+										<span fg={colors.error}> (No customer)</span>
 									)}
 								</text>
 								<text>
-									<span fg="#94a3b8">{formatDuration(group.totalMs)}</span>
+									<span fg={colors.textSecondary}>{formatDuration(group.totalMs)}</span>
 									{group.project.hourlyRate != null && (
-										<span fg="#10b981">
+										<span fg={colors.success}>
 											{" "}
 											{formatCurrency(group.totalAmount)}
 										</span>
@@ -331,7 +335,7 @@ export function TimesheetView({
 										style={{
 											flexDirection: "row",
 											backgroundColor: isSelected
-												? COLORS.selectedRowBg
+												? colors.selectedRowBg
 												: "transparent",
 											paddingLeft: 2,
 											paddingRight: 1,
@@ -339,29 +343,29 @@ export function TimesheetView({
 									>
 										{/* Checkbox */}
 										<box style={{ width: COL.checkbox }}>
-											<text fg={isChecked ? "#10b981" : "#64748b"}>
+											<text fg={isChecked ? colors.success : colors.textMuted}>
 												{isChecked ? "[x]" : "[ ]"}
 											</text>
 										</box>
 										{/* Date */}
 										<box style={{ width: COL.date }}>
-											<text fg="#94a3b8">{dateStr}</text>
+											<text fg={colors.textSecondary}>{dateStr}</text>
 										</box>
 										{/* Time Range */}
 										<box style={{ width: COL.time }}>
-											<text fg="#64748b">{timeRange}</text>
+											<text fg={colors.textMuted}>{timeRange}</text>
 										</box>
 										{/* Duration */}
 										<box style={{ width: COL.duration }}>
-											<text fg="#94a3b8">{durationStr}</text>
+											<text fg={colors.textSecondary}>{durationStr}</text>
 										</box>
 										{/* Amount */}
 										<box style={{ width: COL.amount }}>
-											<text fg="#10b981">{amountStr}</text>
+											<text fg={colors.success}>{amountStr}</text>
 										</box>
 										{/* Description */}
 										<box style={{ flexGrow: 1 }}>
-											<text fg={isSelected ? "#ffffff" : "#e2e8f0"}>
+											<text fg={isSelected ? colors.selectedText : colors.textPrimary}>
 												{entry.description || ""}
 											</text>
 										</box>

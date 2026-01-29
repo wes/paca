@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useKeyboard } from "@opentui/react";
-import { COLORS } from "../types";
+import { CATPPUCCIN_MOCHA, type Theme } from "../types";
 import Modal from "./Modal";
 import { useMultiPaste } from "../hooks/usePaste";
 
@@ -11,6 +11,7 @@ interface CustomerModalProps {
   initialStripeId?: string;
   onSubmit: (name: string, email: string, stripeCustomerId?: string) => void;
   onCancel: () => void;
+  theme?: Theme;
 }
 
 type Field = "name" | "email" | "stripeId";
@@ -22,12 +23,14 @@ export function CustomerModal({
   initialStripeId = "",
   onSubmit,
   onCancel,
+  theme = CATPPUCCIN_MOCHA,
 }: CustomerModalProps) {
   const [name, setName] = useState(initialName);
   const [email, setEmail] = useState(initialEmail);
   const [stripeId, setStripeId] = useState(initialStripeId);
   const [activeField, setActiveField] = useState<Field>("name");
   const { registerInput } = useMultiPaste();
+  const colors = theme.colors;
 
   const fields: Field[] = mode === "edit" ? ["name", "email", "stripeId"] : ["name", "email"];
 
@@ -61,6 +64,7 @@ export function CustomerModal({
     <Modal
       title={mode === "create" ? "Create New Customer" : "Edit Customer"}
       height={mode === "edit" ? 18 : 14}
+      theme={theme}
     >
       <box
         onClick={() => setActiveField("name")}
@@ -70,13 +74,13 @@ export function CustomerModal({
         }}
       >
         <box>
-          <text fg="#94a3b8">Name</text>
+          <text fg={colors.accentSecondary}>Name</text>
         </box>
         <box
           style={{
             border: true,
             borderColor:
-              activeField === "name" ? COLORS.border : COLORS.borderOff,
+              activeField === "name" ? colors.border : colors.borderOff,
             height: 3,
             width: "100%",
           }}
@@ -100,13 +104,13 @@ export function CustomerModal({
         }}
       >
         <box>
-          <text fg="#94a3b8">Email</text>
+          <text fg={colors.accentSecondary}>Email</text>
         </box>
         <box
           style={{
             border: true,
             borderColor:
-              activeField === "email" ? COLORS.border : COLORS.borderOff,
+              activeField === "email" ? colors.border : colors.borderOff,
             height: 3,
             width: "100%",
           }}
@@ -131,13 +135,13 @@ export function CustomerModal({
           }}
         >
           <box>
-            <text fg="#94a3b8">Stripe Customer ID</text>
+            <text fg={colors.accentSecondary}>Stripe Customer ID</text>
           </box>
           <box
             style={{
               border: true,
               borderColor:
-                activeField === "stripeId" ? COLORS.border : COLORS.borderOff,
+                activeField === "stripeId" ? colors.border : colors.borderOff,
               height: 3,
               width: "100%",
             }}

@@ -1,11 +1,11 @@
-import type { ProjectWithTaskCounts } from "../types.ts";
-import { COLORS } from "../types";
+import type { ProjectWithTaskCounts, Theme } from "../types.ts";
 
 interface ProjectListProps {
 	projects: ProjectWithTaskCounts[];
 	selectedIndex: number;
 	focused: boolean;
 	showArchived: boolean;
+	theme: Theme;
 }
 
 export function ProjectList({
@@ -13,7 +13,10 @@ export function ProjectList({
 	selectedIndex,
 	focused,
 	showArchived,
+	theme,
 }: ProjectListProps) {
+	const colors = theme.colors;
+
 	const getTaskStats = (project: ProjectWithTaskCounts) => {
 		const total = project.tasks.length;
 		const done = project.tasks.filter((t) => t.status === "done").length;
@@ -32,7 +35,7 @@ export function ProjectList({
 			title={`Projects${showArchived ? " (incl. archived)" : ""}`}
 			style={{
 				border: true,
-				borderColor: focused ? COLORS.border : COLORS.borderOff,
+				borderColor: focused ? colors.border : colors.borderOff,
 				flexGrow: 1,
 				flexDirection: "column",
 			}}
@@ -45,8 +48,8 @@ export function ProjectList({
 						justifyContent: "center",
 					}}
 				>
-					<text fg="#64748b">No projects yet</text>
-					<text fg="#475569">Press 'n' to create one</text>
+					<text fg={colors.textSecondary}>No projects yet</text>
+					<text fg={colors.textMuted}>Press 'n' to create one</text>
 				</box>
 			) : (
 				<scrollbox focused={focused} style={{ flexGrow: 1 }}>
@@ -57,8 +60,8 @@ export function ProjectList({
 						// Dim highlight when not focused, bright when focused
 						const bgColor = isSelected
 							? focused
-								? COLORS.selectedRowBg
-								: "#252560" // Muted version of selectedRowBg
+								? colors.selectedRowBg
+								: colors.surface
 							: "transparent";
 
 						return (
@@ -82,24 +85,24 @@ export function ProjectList({
 											{project.archived ? "[ ] " : "[*] "}
 										</span>
 										<span
-											fg={isSelected ? "#ffffff" : "#e2e8f0"}
+											fg={isSelected ? colors.selectedText : colors.textPrimary}
 											attributes={isSelected ? "bold" : undefined}
 										>
 											{project.name}
 										</span>
-										{project.archived && <span fg="#64748b"> (archived)</span>}
+										{project.archived && <span fg={colors.textSecondary}> (archived)</span>}
 										{project.hourlyRate != null && (
-											<span fg="#10b981"> ${project.hourlyRate}/hr</span>
+											<span fg={colors.success}> ${project.hourlyRate}/hr</span>
 										)}
 									</text>
 									<text>
-										<span fg="#10b981">{stats.done}</span>
-										<span fg="#64748b">/</span>
-										<span fg="#94a3b8">{stats.total}</span>
+										<span fg={colors.statusDone}>{stats.done}</span>
+										<span fg={colors.textSecondary}>/</span>
+										<span fg={colors.textSecondary}>{stats.total}</span>
 									</text>
 								</box>
 								{project.description && (
-									<text fg="#64748b" style={{ paddingLeft: 4 }}>
+									<text fg={colors.textSecondary} style={{ paddingLeft: 4 }}>
 										{project.description.slice(0, 40)}
 										{project.description.length > 40 ? "..." : ""}
 									</text>

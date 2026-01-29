@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { View, RunningTimer } from "../types.ts";
+import type { View, RunningTimer, Theme } from "../types.ts";
 import { Timer } from "./Timer.tsx";
 
 interface HeaderProps {
@@ -7,6 +7,7 @@ interface HeaderProps {
 	onViewChange: (view: View) => void;
 	runningTimer: RunningTimer | null;
 	onStopTimer: () => void;
+	theme: Theme;
 }
 
 const VIEWS: { key: View; label: string; shortcut: string }[] = [
@@ -22,7 +23,10 @@ export function Header({
 	currentView,
 	runningTimer,
 	onStopTimer,
+	theme,
 }: HeaderProps) {
+	const colors = theme.colors;
+
 	return (
 		<box
 			style={{
@@ -51,14 +55,14 @@ export function Header({
 				>
 					{VIEWS.map((view) => (
 						<text key={view.key}>
-							<span fg="#3b82f6">{view.shortcut} </span>
-							<span fg={currentView === view.key ? "#ffffff" : "#64748b"}>
+							<span fg={colors.accent}>{view.shortcut} </span>
+							<span fg={currentView === view.key ? colors.textPrimary : colors.textSecondary}>
 								{view.label}
 							</span>
 						</text>
 					))}
 				</box>
-				<Timer runningTimer={runningTimer} onStop={onStopTimer} />
+				<Timer runningTimer={runningTimer} onStop={onStopTimer} theme={theme} />
 			</box>
 		</box>
 	);

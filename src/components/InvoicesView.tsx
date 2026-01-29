@@ -1,4 +1,4 @@
-import { COLORS } from "../types.ts";
+import type { Theme } from "../types.ts";
 import type { StripeInvoiceItem } from "../stripe.ts";
 
 interface InvoicesViewProps {
@@ -11,6 +11,7 @@ interface InvoicesViewProps {
 	currentPage: number;
 	hasMore: boolean;
 	hasPrevious: boolean;
+	theme: Theme;
 }
 
 function formatCurrency(amount: number, currency: string): string {
@@ -28,20 +29,20 @@ function formatDate(date: Date): string {
 	});
 }
 
-function getStatusColor(status: string): string {
+function getStatusColor(status: string, colors: Theme["colors"]): string {
 	switch (status) {
 		case "paid":
-			return "#10b981"; // green
+			return colors.success;
 		case "open":
-			return "#f59e0b"; // amber
+			return colors.warning;
 		case "draft":
-			return "#64748b"; // gray
+			return colors.textMuted;
 		case "void":
-			return "#ef4444"; // red
+			return colors.error;
 		case "uncollectible":
-			return "#ef4444"; // red
+			return colors.error;
 		default:
-			return "#94a3b8";
+			return colors.textSecondary;
 	}
 }
 
@@ -63,7 +64,10 @@ export function InvoicesView({
 	currentPage,
 	hasMore,
 	hasPrevious,
+	theme,
 }: InvoicesViewProps) {
+	const colors = theme.colors;
+
 	if (!hasStripeKey) {
 		return (
 			<box
@@ -79,9 +83,9 @@ export function InvoicesView({
 						justifyContent: "space-between",
 					}}
 				>
-					<text fg="#ffffff">Invoices</text>
+					<text fg={colors.textPrimary}>Invoices</text>
 				</box>
-				<text fg={COLORS.borderOff}>{"─".repeat(200)}</text>
+				<text fg={colors.borderOff}>{"─".repeat(200)}</text>
 				<box
 					style={{
 						flexGrow: 1,
@@ -89,8 +93,8 @@ export function InvoicesView({
 						alignItems: "center",
 					}}
 				>
-					<text fg="#ef4444">No Stripe API key configured.</text>
-					<text fg="#64748b">Add one in Settings to view invoices.</text>
+					<text fg={colors.error}>No Stripe API key configured.</text>
+					<text fg={colors.textSecondary}>Add one in Settings to view invoices.</text>
 				</box>
 			</box>
 		);
@@ -111,7 +115,7 @@ export function InvoicesView({
 						justifyContent: "space-between",
 					}}
 				>
-					<text fg="#ffffff">Invoices</text>
+					<text fg={colors.textPrimary}>Invoices</text>
 				</box>
 
 				<box
@@ -121,7 +125,7 @@ export function InvoicesView({
 						alignItems: "center",
 					}}
 				>
-					<text fg="#64748b">Loading invoices from Stripe...</text>
+					<text fg={colors.textSecondary}>Loading invoices from Stripe...</text>
 				</box>
 			</box>
 		);
@@ -142,7 +146,7 @@ export function InvoicesView({
 						justifyContent: "space-between",
 					}}
 				>
-					<text fg="#ffffff">Invoices</text>
+					<text fg={colors.textPrimary}>Invoices</text>
 				</box>
 
 				<box
@@ -152,7 +156,7 @@ export function InvoicesView({
 						alignItems: "center",
 					}}
 				>
-					<text fg="#ef4444">Error: {error}</text>
+					<text fg={colors.error}>Error: {error}</text>
 				</box>
 			</box>
 		);
@@ -173,7 +177,7 @@ export function InvoicesView({
 						justifyContent: "space-between",
 					}}
 				>
-					<text fg="#ffffff">Invoices</text>
+					<text fg={colors.textPrimary}>Invoices</text>
 				</box>
 
 				<box
@@ -183,7 +187,7 @@ export function InvoicesView({
 						alignItems: "center",
 					}}
 				>
-					<text fg="#64748b">No invoices found in Stripe</text>
+					<text fg={colors.textSecondary}>No invoices found in Stripe</text>
 				</box>
 			</box>
 		);
@@ -205,20 +209,20 @@ export function InvoicesView({
 				}}
 			>
 				<box style={{ width: COL.invoiceId }}>
-					<text fg="#64748b">Invoice ID</text>
+					<text fg={colors.textSecondary}>Invoice ID</text>
 				</box>
 				<box style={{ width: COL.date }}>
-					<text fg="#64748b">Date</text>
+					<text fg={colors.textSecondary}>Date</text>
 				</box>
 				<box style={{ width: COL.status }}>
-					<text fg="#64748b">Status</text>
+					<text fg={colors.textSecondary}>Status</text>
 				</box>
 				<box style={{ flexGrow: 1 }}>
-					<text fg="#64748b">Client</text>
+					<text fg={colors.textSecondary}>Client</text>
 				</box>
 
 				<box style={{ width: COL.amount, alignItems: "flex-end" }}>
-					<text fg="#64748b">Amount</text>
+					<text fg={colors.textSecondary}>Amount</text>
 				</box>
 			</box>
 
@@ -233,7 +237,7 @@ export function InvoicesView({
 							style={{
 								flexDirection: "row",
 								backgroundColor: isSelected
-									? COLORS.selectedRowBg
+									? colors.selectedRowBg
 									: "transparent",
 								paddingLeft: 1,
 								paddingRight: 1,
@@ -241,30 +245,30 @@ export function InvoicesView({
 						>
 							{/* Invoice ID */}
 							<box style={{ width: COL.invoiceId }}>
-								<text fg={isSelected ? "#ffffff" : "#e2e8f0"}>
+								<text fg={isSelected ? colors.selectedText : colors.textPrimary}>
 									{invoice.number || invoice.id.slice(-8)}
 								</text>
 							</box>
 							{/* Date */}
 							<box style={{ width: COL.date }}>
-								<text fg="#94a3b8">{formatDate(invoice.created)}</text>
+								<text fg={colors.textSecondary}>{formatDate(invoice.created)}</text>
 							</box>
 							{/* Status */}
 							<box style={{ width: COL.status }}>
-								<text fg={getStatusColor(invoice.status)}>
+								<text fg={getStatusColor(invoice.status, colors)}>
 									{invoice.status}
 								</text>
 							</box>
 							{/* Client */}
 							<box style={{ flexGrow: 1 }}>
-								<text fg={isSelected ? "#ffffff" : "#e2e8f0"}>
+								<text fg={isSelected ? colors.selectedText : colors.textPrimary}>
 									{invoice.customerName || invoice.customerEmail || "Unknown"}
 								</text>
 							</box>
 
 							{/* Amount */}
 							<box style={{ width: COL.amount, alignItems: "flex-end" }}>
-								<text fg="#10b981">
+								<text fg={colors.success}>
 									{formatCurrency(invoice.amount, invoice.currency)}
 								</text>
 							</box>

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { InputMode } from "../types.ts";
+import type { InputMode, Theme } from "../types.ts";
+import { CATPPUCCIN_MOCHA } from "../types.ts";
 import Modal from "./Modal";
 import { usePaste } from "../hooks/usePaste";
 
@@ -10,6 +11,7 @@ interface InputModalProps {
   placeholder?: string;
   onSubmit: (value: string) => void;
   onCancel: () => void;
+  theme?: Theme;
 }
 
 export function InputModal({
@@ -17,16 +19,18 @@ export function InputModal({
   initialValue = "",
   placeholder = "",
   onSubmit,
+  theme = CATPPUCCIN_MOCHA,
 }: InputModalProps) {
   const [value, setValue] = useState(initialValue);
   const inputRef = usePaste();
+  const colors = theme.colors;
 
   return (
-    <Modal title={title}>
+    <Modal title={title} theme={theme}>
       <box
         style={{
           border: true,
-          borderColor: "#475569",
+          borderColor: colors.borderSubtle,
           height: 3,
           marginTop: 1,
         }}
@@ -53,25 +57,32 @@ interface ConfirmModalProps {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  theme?: Theme;
 }
 
-export function ConfirmModal({ title, message }: ConfirmModalProps) {
+export function ConfirmModal({
+  title,
+  message,
+  theme = CATPPUCCIN_MOCHA,
+}: ConfirmModalProps) {
+  const colors = theme.colors;
+
   return (
-    <Modal title={title}>
-      <text fg="#ef4444" attributes="bold">
+    <Modal title={title} theme={theme}>
+      <text fg={colors.error} attributes="bold">
         {title}
       </text>
-      <text fg="#e2e8f0" style={{ marginTop: 1 }}>
+      <text fg={colors.textPrimary} style={{ marginTop: 1 }}>
         {message}
       </text>
       <box style={{ flexDirection: "row", gap: 2, marginTop: 1 }}>
         <text>
-          <span fg="#10b981">[y]</span>
-          <span fg="#94a3b8"> Yes</span>
+          <span fg={colors.success}>[y]</span>
+          <span fg={colors.textSecondary}> Yes</span>
         </text>
         <text>
-          <span fg="#ef4444">[n]</span>
-          <span fg="#94a3b8"> No</span>
+          <span fg={colors.error}>[n]</span>
+          <span fg={colors.textSecondary}> No</span>
         </text>
       </box>
     </Modal>

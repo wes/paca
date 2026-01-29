@@ -259,7 +259,7 @@ export function DateTimePicker({
 		paddingRight: 1,
 		height: 3,
 		backgroundColor:
-			activeField === field && focused ? "#1e40af" : "transparent",
+			activeField === field && focused ? "#7c3aed" : "transparent",
 		borderColor:
 			activeField === field && focused ? COLORS.border : COLORS.borderOff,
 	});
@@ -280,19 +280,19 @@ export function DateTimePicker({
 				>
 					<box style={fieldStyle("month")}>
 						<text
-							fg={activeField === "month" && focused ? "#ffffff" : "#e2e8f0"}
+							fg={activeField === "month" && focused ? "#ffffff" : "#e0f2fe"}
 						>
 							{MONTHS[month]}
 						</text>
 					</box>
 					<box style={fieldStyle("day")}>
-						<text fg={activeField === "day" && focused ? "#ffffff" : "#e2e8f0"}>
+						<text fg={activeField === "day" && focused ? "#ffffff" : "#e0f2fe"}>
 							{String(day).padStart(2, "0")}
 						</text>
 					</box>
 					<box style={fieldStyle("year")}>
 						<text
-							fg={activeField === "year" && focused ? "#ffffff" : "#e2e8f0"}
+							fg={activeField === "year" && focused ? "#ffffff" : "#e0f2fe"}
 						>
 							{year}
 						</text>
@@ -308,22 +308,22 @@ export function DateTimePicker({
 				>
 					<box style={fieldStyle("hour")}>
 						<text
-							fg={activeField === "hour" && focused ? "#ffffff" : "#e2e8f0"}
+							fg={activeField === "hour" && focused ? "#ffffff" : "#e0f2fe"}
 						>
 							{String(hour).padStart(2, "0")}
 						</text>
 					</box>
-					<text fg="#64748b">:</text>
+					<text fg="#7c3aed">:</text>
 					<box style={fieldStyle("minute")}>
 						<text
-							fg={activeField === "minute" && focused ? "#ffffff" : "#e2e8f0"}
+							fg={activeField === "minute" && focused ? "#ffffff" : "#e0f2fe"}
 						>
 							{String(minute).padStart(2, "0")}
 						</text>
 					</box>
 					<box style={fieldStyle("ampm")}>
 						<text
-							fg={activeField === "ampm" && focused ? "#ffffff" : "#e2e8f0"}
+							fg={activeField === "ampm" && focused ? "#ffffff" : "#e0f2fe"}
 						>
 							{ampm}
 						</text>

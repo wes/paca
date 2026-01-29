@@ -630,6 +630,7 @@ export const settings = {
       businessName: all.businessName ?? "",
       stripeApiKey: all.stripeApiKey ?? "",
       timezone: all.timezone ?? "auto",
+      theme: all.theme ?? "catppuccin-mocha",
     };
   },
 };

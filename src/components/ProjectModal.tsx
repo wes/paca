@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useKeyboard } from "@opentui/react";
-import { COLORS } from "../types";
+import { CATPPUCCIN_MOCHA, type Theme } from "../types";
 import Modal from "./Modal";
 import { useMultiPaste } from "../hooks/usePaste";
 
@@ -10,6 +10,7 @@ interface ProjectModalProps {
   initialRate?: number | null;
   onSubmit: (name: string, rate: number | null) => void;
   onCancel: () => void;
+  theme?: Theme;
 }
 
 export function ProjectModal({
@@ -18,11 +19,13 @@ export function ProjectModal({
   initialRate = null,
   onSubmit,
   onCancel,
+  theme = CATPPUCCIN_MOCHA,
 }: ProjectModalProps) {
   const [name, setName] = useState(initialName);
   const [rate, setRate] = useState(initialRate?.toString() ?? "");
   const [activeField, setActiveField] = useState<"name" | "rate">("name");
   const { registerInput } = useMultiPaste();
+  const colors = theme.colors;
 
   useKeyboard((key) => {
     if (key.name === "escape") {
@@ -49,6 +52,7 @@ export function ProjectModal({
     <Modal
       title={mode === "create" ? "Create New Project" : "Edit Project"}
       height={14}
+      theme={theme}
     >
       <box
         onClick={() => setActiveField("name")}
@@ -58,13 +62,13 @@ export function ProjectModal({
         }}
       >
         <box>
-          <text fg="#94a3b8">Name</text>
+          <text fg={colors.accentSecondary}>Name</text>
         </box>
         <box
           style={{
             border: true,
             borderColor:
-              activeField === "name" ? COLORS.border : COLORS.borderOff,
+              activeField === "name" ? colors.border : colors.borderOff,
             height: 3,
             width: "100%",
           }}
@@ -88,7 +92,7 @@ export function ProjectModal({
         }}
       >
         <box>
-          <text fg="#94a3b8" style={{ minWidth: 12 }}>
+          <text fg={colors.accentSecondary} style={{ minWidth: 12 }}>
             Hourly Rate
           </text>
         </box>
@@ -96,7 +100,7 @@ export function ProjectModal({
           style={{
             border: true,
             borderColor:
-              activeField === "rate" ? COLORS.border : COLORS.borderOff,
+              activeField === "rate" ? colors.border : colors.borderOff,
             height: 3,
             width: "100%",
           }}

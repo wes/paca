@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { useTerminalDimensions } from "@opentui/react";
-import type { DashboardStats, Task, WeeklyTimeData } from "../types.ts";
-import { COLORS } from "../types.ts";
+import type { DashboardStats, Task, WeeklyTimeData, Theme } from "../types.ts";
 
 interface DashboardProps {
 	stats: DashboardStats;
@@ -9,30 +8,34 @@ interface DashboardProps {
 	weeklyTimeData: WeeklyTimeData[];
 	selectedIndex: number;
 	focused: boolean;
+	theme: Theme;
 }
-
-const STATUS_COLORS = {
-	todo: "#64748b",
-	inProgress: "#f59e0b",
-	done: "#10b981",
-};
 
 function StackedBarChart({
 	stats,
 	width,
+	theme,
 }: {
 	stats: DashboardStats;
 	width: number;
+	theme: Theme;
 }) {
+	const colors = theme.colors;
+	const statusColors = {
+		todo: colors.statusTodo,
+		inProgress: colors.statusInProgress,
+		done: colors.statusDone,
+	};
+
 	const total = stats.totalTasks;
 	const barWidth = Math.max(width - 4, 20); // Account for padding/borders
 
 	if (total === 0) {
 		return (
 			<box style={{ flexDirection: "column", gap: 1, width: "100%" }}>
-				<text fg="#334155">{"░".repeat(barWidth)}</text>
-				<text fg="#334155">{"░".repeat(barWidth)}</text>
-				<text fg="#64748b">No tasks yet</text>
+				<text fg={colors.borderSubtle}>{"░".repeat(barWidth)}</text>
+				<text fg={colors.borderSubtle}>{"░".repeat(barWidth)}</text>
+				<text fg={colors.textSecondary}>No tasks yet</text>
 			</box>
 		);
 	}
@@ -44,44 +47,40 @@ function StackedBarChart({
 	);
 	const todoWidth = barWidth - doneWidth - inProgressWidth;
 
-	// Build the bar string
-	const barLine =
-		"█".repeat(doneWidth) + "█".repeat(inProgressWidth) + "█".repeat(todoWidth);
-
 	return (
 		<box style={{ flexDirection: "column", gap: 1, width: "100%" }}>
 			{/* The stacked bar - multiple lines for height */}
 			<text>
-				<span fg={STATUS_COLORS.done}>{"█".repeat(doneWidth)}</span>
-				<span fg={STATUS_COLORS.inProgress}>{"█".repeat(inProgressWidth)}</span>
-				<span fg={STATUS_COLORS.todo}>{"█".repeat(todoWidth)}</span>
+				<span fg={statusColors.done}>{"█".repeat(doneWidth)}</span>
+				<span fg={statusColors.inProgress}>{"█".repeat(inProgressWidth)}</span>
+				<span fg={statusColors.todo}>{"█".repeat(todoWidth)}</span>
 			</text>
 			<text>
-				<span fg={STATUS_COLORS.done}>{"█".repeat(doneWidth)}</span>
-				<span fg={STATUS_COLORS.inProgress}>{"█".repeat(inProgressWidth)}</span>
-				<span fg={STATUS_COLORS.todo}>{"█".repeat(todoWidth)}</span>
+				<span fg={statusColors.done}>{"█".repeat(doneWidth)}</span>
+				<span fg={statusColors.inProgress}>{"█".repeat(inProgressWidth)}</span>
+				<span fg={statusColors.todo}>{"█".repeat(todoWidth)}</span>
 			</text>
 
 			{/* Legend */}
 			<box style={{ flexDirection: "row", gap: 3, marginTop: 1 }}>
 				<text>
-					<span fg={STATUS_COLORS.done}>●</span>
-					<span fg="#94a3b8"> Done </span>
-					<span fg="#ffffff" attributes="bold">
+					<span fg={statusColors.done}>●</span>
+					<span fg={colors.textSecondary}> Done </span>
+					<span fg={colors.textPrimary} attributes="bold">
 						{stats.doneTasks}
 					</span>
 				</text>
 				<text>
-					<span fg={STATUS_COLORS.inProgress}>●</span>
-					<span fg="#94a3b8"> In Progress </span>
-					<span fg="#ffffff" attributes="bold">
+					<span fg={statusColors.inProgress}>●</span>
+					<span fg={colors.textSecondary}> In Progress </span>
+					<span fg={colors.textPrimary} attributes="bold">
 						{stats.inProgressTasks}
 					</span>
 				</text>
 				<text>
-					<span fg={STATUS_COLORS.todo}>●</span>
-					<span fg="#94a3b8"> To Do </span>
-					<span fg="#ffffff" attributes="bold">
+					<span fg={statusColors.todo}>●</span>
+					<span fg={colors.textSecondary}> To Do </span>
+					<span fg={colors.textPrimary} attributes="bold">
 						{stats.todoTasks}
 					</span>
 				</text>
@@ -99,27 +98,17 @@ function formatHours(ms: number): string {
 	return `${hours.toFixed(1)}h`;
 }
 
-// Distinct color palette for chart bars
-const CHART_COLORS = [
-	"#3b82f6", // Blue
-	"#10b981", // Green
-	"#f59e0b", // Amber
-	"#ef4444", // Red
-	"#8b5cf6", // Purple
-	"#ec4899", // Pink
-	"#06b6d4", // Cyan
-	"#f97316", // Orange
-	"#84cc16", // Lime
-	"#6366f1", // Indigo
-];
-
 function WeeklyTimeChart({
 	data,
 	width,
+	theme,
 }: {
 	data: WeeklyTimeData[];
 	width: number;
+	theme: Theme;
 }) {
+	const colors = theme.colors;
+	const chartColors = theme.projectColors;
 	const chartWidth = Math.max(width + 4, 40);
 	const maxBars = Math.min(data.length, 25, Math.floor(chartWidth / 3)); // Each bar needs ~3 chars min, max 25 weeks
 	const recentData = data.slice(-maxBars);
@@ -127,7 +116,7 @@ function WeeklyTimeChart({
 	if (recentData.length === 0) {
 		return (
 			<box style={{ flexDirection: "column", gap: 1, width: "100%" }}>
-				<text fg="#64748b">No time entries in the last 6 months</text>
+				<text fg={colors.textSecondary}>No time entries in the last 6 months</text>
 			</box>
 		);
 	}
@@ -169,7 +158,7 @@ function WeeklyTimeChart({
 	// Assign dynamic colors to each project based on their sorted position
 	const projectColorMap = new Map<string, string>();
 	sortedProjects.forEach(([projectId], index) => {
-		projectColorMap.set(projectId, CHART_COLORS[index % CHART_COLORS.length]!);
+		projectColorMap.set(projectId, chartColors[index % chartColors.length]!);
 	});
 
 	// Pre-sort each week's projects by the global order for consistent stacking
@@ -203,14 +192,14 @@ function WeeklyTimeChart({
 
 				// Find which project this row belongs to based on cumulative fraction
 				let cumulativeFraction = 0;
-				let projectColor = CHART_COLORS[0]!;
+				let projectColor = chartColors[0]!;
 
 				for (const proj of weekProjects) {
 					const projFraction = proj.ms / week.totalMs;
 					cumulativeFraction += projFraction;
 					if (rowFraction <= cumulativeFraction) {
 						projectColor =
-							projectColorMap.get(proj.projectId) || CHART_COLORS[0]!;
+							projectColorMap.get(proj.projectId) || chartColors[0]!;
 						break;
 					}
 				}
@@ -230,7 +219,7 @@ function WeeklyTimeChart({
 					trimmed +
 					" ".repeat(barWidth - padLeft - trimmed.length);
 				rowParts.push(
-					<span key={i} fg="#64748b">
+					<span key={i} fg={colors.textSecondary}>
 						{centered}
 					</span>,
 				);
@@ -260,7 +249,7 @@ function WeeklyTimeChart({
 			trimmed +
 			" ".repeat(barWidth - padLeft - trimmed.length);
 		dateLabelParts.push(
-			<span key={i} fg="#64748b">
+			<span key={i} fg={colors.textSecondary}>
 				{centered}
 			</span>,
 		);
@@ -283,12 +272,12 @@ function WeeklyTimeChart({
 				{sortedProjects.slice(0, 4).map(([id, proj]) => (
 					<text key={id}>
 						<span fg={projectColorMap.get(id)}>●</span>
-						<span fg="#94a3b8"> {proj.name.slice(0, 12)}</span>
+						<span fg={colors.textSecondary}> {proj.name.slice(0, 12)}</span>
 					</text>
 				))}
 				<text>
-					<span fg="#94a3b8">Total: </span>
-					<span fg="#ffffff" attributes="bold">
+					<span fg={colors.textSecondary}>Total: </span>
+					<span fg={colors.textPrimary} attributes="bold">
 						{formatHours(totalMs)}
 					</span>
 				</text>
@@ -303,17 +292,19 @@ export function Dashboard({
 	weeklyTimeData,
 	selectedIndex,
 	focused,
+	theme,
 }: DashboardProps) {
 	const { width: termWidth } = useTerminalDimensions();
+	const colors = theme.colors;
 
 	const getStatusColor = (status: string) => {
 		switch (status) {
 			case "done":
-				return "#10b981";
+				return colors.statusDone;
 			case "in_progress":
-				return "#f59e0b";
+				return colors.statusInProgress;
 			default:
-				return "#64748b";
+				return colors.statusTodo;
 		}
 	};
 
@@ -321,12 +312,12 @@ export function Dashboard({
 		priority: string,
 	): { symbol: string; color: string } => {
 		const indicators: Record<string, { symbol: string; color: string }> = {
-			urgent: { symbol: "!", color: "#ef4444" },
-			high: { symbol: "!", color: "#f59e0b" },
-			medium: { symbol: "!", color: "#3b82f6" },
-			low: { symbol: " ", color: "#64748b" },
+			urgent: { symbol: "!", color: colors.priorityUrgent },
+			high: { symbol: "!", color: colors.priorityHigh },
+			medium: { symbol: "!", color: colors.priorityMedium },
+			low: { symbol: " ", color: colors.priorityLow },
 		};
-		return indicators[priority] ?? { symbol: "!", color: "#3b82f6" };
+		return indicators[priority] ?? { symbol: "!", color: colors.priorityMedium };
 	};
 
 	return (
@@ -340,7 +331,7 @@ export function Dashboard({
 		>
 			{/* Progress Section */}
 			<box title="Task Status">
-				<StackedBarChart stats={stats} width={termWidth} />
+				<StackedBarChart stats={stats} width={termWidth} theme={theme} />
 			</box>
 
 			{/* Weekly Time Chart */}
@@ -351,7 +342,7 @@ export function Dashboard({
 					alignItems: "center",
 				}}
 			>
-				<WeeklyTimeChart data={weeklyTimeData} width={termWidth} />
+				<WeeklyTimeChart data={weeklyTimeData} width={termWidth} theme={theme} />
 			</box>
 
 			{/* Recent Activity */}
@@ -359,7 +350,7 @@ export function Dashboard({
 				title="Recent Activity"
 				style={{
 					border: true,
-					borderColor: COLORS.borderOff,
+					borderColor: colors.borderOff,
 					flexGrow: 1,
 					flexDirection: "column",
 				}}
@@ -372,8 +363,8 @@ export function Dashboard({
 							justifyContent: "center",
 						}}
 					>
-						<text fg="#64748b">No recent activity</text>
-						<text fg="#475569">Create a project to get started!</text>
+						<text fg={colors.textSecondary}>No recent activity</text>
+						<text fg={colors.textMuted}>Create a project to get started!</text>
 					</box>
 				) : (
 					<scrollbox focused={focused} style={{ flexGrow: 1 }}>
@@ -390,7 +381,7 @@ export function Dashboard({
 										paddingRight: 1,
 										backgroundColor:
 											isSelected && focused
-												? COLORS.selectedRowBg
+												? colors.selectedRowBg
 												: "transparent",
 									}}
 								>
@@ -417,10 +408,10 @@ export function Dashboard({
 												<span
 													fg={
 														task.status === "done"
-															? "#64748b"
+															? colors.textSecondary
 															: isSelected
-																? "#ffffff"
-																: "#e2e8f0"
+																? colors.selectedText
+																: colors.textPrimary
 													}
 													attributes={
 														task.status === "done"
@@ -432,11 +423,11 @@ export function Dashboard({
 												>
 													{task.title}
 												</span>
-												<span fg="#64748b"> in </span>
+												<span fg={colors.textSecondary}> in </span>
 												<span fg={task.project.color}>{task.project.name}</span>
 											</text>
 										</box>
-										<text fg="#475569">
+										<text fg={colors.textMuted}>
 											{new Date(task.updatedAt).toLocaleDateString("en-US", {
 												month: "short",
 												day: "numeric",

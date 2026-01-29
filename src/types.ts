@@ -62,6 +62,7 @@ export type InputMode =
 	| "edit_business_name"
 	| "edit_stripe_key"
 	| "edit_timezone"
+	| "select_theme"
 	| "confirm_import"
 	| "edit_time_entry"
 	| "create_invoice"
@@ -100,6 +101,286 @@ export interface AppSettings {
 	businessName: string;
 	stripeApiKey: string;
 	timezone: string; // IANA timezone (e.g., "America/New_York") or "auto" for system detection
+	theme: string; // Theme name (e.g., "catppuccin-mocha", "neon")
+}
+
+// Theme color definitions
+export interface Theme {
+	name: string;
+	displayName: string;
+	colors: {
+		// Base colors
+		bg: string;
+		surface: string;
+		overlay: string;
+		// Border colors
+		border: string;
+		borderOff: string;
+		borderSubtle: string;
+		// Text colors
+		textPrimary: string;
+		textSecondary: string;
+		textMuted: string;
+		// Accent colors
+		accent: string;
+		accentSecondary: string;
+		// Selection
+		selectedRowBg: string;
+		selectedText: string;
+		// Status colors
+		success: string;
+		warning: string;
+		error: string;
+		info: string;
+		// Task status colors
+		statusTodo: string;
+		statusInProgress: string;
+		statusDone: string;
+		// Priority colors
+		priorityLow: string;
+		priorityMedium: string;
+		priorityHigh: string;
+		priorityUrgent: string;
+	};
+	// Project color palette
+	projectColors: string[];
+}
+
+// Catppuccin Mocha theme
+export const CATPPUCCIN_MOCHA: Theme = {
+	name: "catppuccin-mocha",
+	displayName: "Catppuccin Mocha",
+	colors: {
+		bg: "#1e1e2e", // base
+		surface: "#313244", // surface0
+		overlay: "#45475a", // surface1
+		border: "#cba6f7", // mauve
+		borderOff: "#585b70", // surface2
+		borderSubtle: "#45475a", // surface1
+		textPrimary: "#cdd6f4", // text
+		textSecondary: "#bac2de", // subtext1
+		textMuted: "#6c7086", // overlay1
+		accent: "#89b4fa", // blue
+		accentSecondary: "#f5c2e7", // pink
+		selectedRowBg: "#45475a", // surface1
+		selectedText: "#cdd6f4", // text
+		success: "#a6e3a1", // green
+		warning: "#f9e2af", // yellow
+		error: "#f38ba8", // red
+		info: "#89dceb", // sky
+		statusTodo: "#89b4fa", // blue
+		statusInProgress: "#f9e2af", // yellow
+		statusDone: "#a6e3a1", // green
+		priorityLow: "#6c7086", // overlay1
+		priorityMedium: "#89b4fa", // blue
+		priorityHigh: "#f9e2af", // yellow
+		priorityUrgent: "#f38ba8", // red
+	},
+	projectColors: [
+		"#cba6f7", // mauve
+		"#89b4fa", // blue
+		"#a6e3a1", // green
+		"#fab387", // peach
+		"#f5c2e7", // pink
+		"#f9e2af", // yellow
+		"#94e2d5", // teal
+		"#f38ba8", // red
+	],
+};
+
+// Neon theme (original)
+export const NEON_THEME: Theme = {
+	name: "neon",
+	displayName: "Neon",
+	colors: {
+		bg: "#0d0221",
+		surface: "#1a0533",
+		overlay: "#2d0a4e",
+		border: "#ff00ff",
+		borderOff: "#6b21a8",
+		borderSubtle: "#3b0764",
+		textPrimary: "#e0f2fe",
+		textSecondary: "#c084fc",
+		textMuted: "#581c87",
+		accent: "#00ffff",
+		accentSecondary: "#ff00ff",
+		selectedRowBg: "#7c3aed",
+		selectedText: "#ffffff",
+		success: "#39ff14",
+		warning: "#ffff00",
+		error: "#ff0055",
+		info: "#00ffff",
+		statusTodo: "#00ffff", // cyan
+		statusInProgress: "#ffff00", // yellow
+		statusDone: "#39ff14", // green
+		priorityLow: "#6b21a8",
+		priorityMedium: "#00ffff",
+		priorityHigh: "#ffff00",
+		priorityUrgent: "#ff0055",
+	},
+	projectColors: [
+		"#ff00ff", // Neon magenta
+		"#00ffff", // Neon cyan
+		"#39ff14", // Neon green
+		"#ff6600", // Neon orange
+		"#ff1493", // Neon pink
+		"#ffff00", // Neon yellow
+		"#00ff88", // Neon mint
+		"#ff3366", // Neon rose
+	],
+};
+
+// Light theme
+export const LIGHT_THEME: Theme = {
+	name: "light",
+	displayName: "Light",
+	colors: {
+		bg: "#ffffff",
+		surface: "#f5f5f5",
+		overlay: "#e8e8e8",
+		border: "#0066cc",
+		borderOff: "#cccccc",
+		borderSubtle: "#e0e0e0",
+		textPrimary: "#1a1a1a",
+		textSecondary: "#4a4a4a",
+		textMuted: "#888888",
+		accent: "#0066cc",
+		accentSecondary: "#6633cc",
+		selectedRowBg: "#cce5ff",
+		selectedText: "#1a1a1a",
+		success: "#28a745",
+		warning: "#d69e2e",
+		error: "#dc3545",
+		info: "#17a2b8",
+		statusTodo: "#0066cc", // blue
+		statusInProgress: "#d69e2e", // yellow/orange
+		statusDone: "#28a745", // green
+		priorityLow: "#888888",
+		priorityMedium: "#0066cc",
+		priorityHigh: "#d69e2e",
+		priorityUrgent: "#dc3545",
+	},
+	projectColors: [
+		"#0066cc", // Blue
+		"#28a745", // Green
+		"#6633cc", // Purple
+		"#e67700", // Orange
+		"#dc3545", // Red
+		"#d69e2e", // Yellow/Gold
+		"#17a2b8", // Teal
+		"#e83e8c", // Pink
+	],
+};
+
+// Dracula theme
+export const DRACULA_THEME: Theme = {
+	name: "dracula",
+	displayName: "Dracula",
+	colors: {
+		bg: "#282a36", // Background
+		surface: "#343746", // Current Line
+		overlay: "#44475a", // Selection
+		border: "#bd93f9", // Purple
+		borderOff: "#6272a4", // Comment
+		borderSubtle: "#44475a", // Selection
+		textPrimary: "#f8f8f2", // Foreground
+		textSecondary: "#f8f8f2", // Foreground
+		textMuted: "#6272a4", // Comment
+		accent: "#8be9fd", // Cyan
+		accentSecondary: "#ff79c6", // Pink
+		selectedRowBg: "#44475a", // Selection
+		selectedText: "#f8f8f2", // Foreground
+		success: "#50fa7b", // Green
+		warning: "#f1fa8c", // Yellow
+		error: "#ff5555", // Red
+		info: "#8be9fd", // Cyan
+		statusTodo: "#bd93f9", // Purple
+		statusInProgress: "#f1fa8c", // Yellow
+		statusDone: "#50fa7b", // Green
+		priorityLow: "#6272a4", // Comment
+		priorityMedium: "#8be9fd", // Cyan
+		priorityHigh: "#f1fa8c", // Yellow
+		priorityUrgent: "#ff5555", // Red
+	},
+	projectColors: [
+		"#bd93f9", // Purple
+		"#8be9fd", // Cyan
+		"#50fa7b", // Green
+		"#ffb86c", // Orange
+		"#ff79c6", // Pink
+		"#f1fa8c", // Yellow
+		"#ff5555", // Red
+		"#6272a4", // Comment (muted blue)
+	],
+};
+
+// Monokai theme
+export const MONOKAI_THEME: Theme = {
+	name: "monokai",
+	displayName: "Monokai",
+	colors: {
+		bg: "#272822", // Background
+		surface: "#3e3d32", // Line highlight
+		overlay: "#49483e", // Selection
+		border: "#a6e22e", // Green
+		borderOff: "#75715e", // Comment
+		borderSubtle: "#49483e", // Selection
+		textPrimary: "#f8f8f2", // Foreground
+		textSecondary: "#f8f8f0", // Foreground light
+		textMuted: "#75715e", // Comment
+		accent: "#66d9ef", // Cyan
+		accentSecondary: "#ae81ff", // Purple
+		selectedRowBg: "#49483e", // Selection
+		selectedText: "#f8f8f2", // Foreground
+		success: "#a6e22e", // Green
+		warning: "#e6db74", // Yellow
+		error: "#f92672", // Pink/Red
+		info: "#66d9ef", // Cyan
+		statusTodo: "#ae81ff", // Purple
+		statusInProgress: "#e6db74", // Yellow
+		statusDone: "#a6e22e", // Green
+		priorityLow: "#75715e", // Comment
+		priorityMedium: "#66d9ef", // Cyan
+		priorityHigh: "#e6db74", // Yellow
+		priorityUrgent: "#f92672", // Pink/Red
+	},
+	projectColors: [
+		"#a6e22e", // Green
+		"#66d9ef", // Cyan
+		"#f92672", // Pink/Red
+		"#fd971f", // Orange
+		"#ae81ff", // Purple
+		"#e6db74", // Yellow
+		"#f8f8f2", // White
+		"#75715e", // Comment (gray)
+	],
+};
+
+// All available themes
+export const THEMES: Record<string, Theme> = {
+	"catppuccin-mocha": CATPPUCCIN_MOCHA,
+	dracula: DRACULA_THEME,
+	monokai: MONOKAI_THEME,
+	neon: NEON_THEME,
+	light: LIGHT_THEME,
+};
+
+// Get theme by name (defaults to catppuccin-mocha)
+export function getTheme(name: string): Theme {
+	return THEMES[name] ?? CATPPUCCIN_MOCHA;
+}
+
+// Get list of theme names for settings
+export function getThemeNames(): string[] {
+	return Object.keys(THEMES);
+}
+
+// Get theme display names
+export function getThemeDisplayNames(): { name: string; displayName: string }[] {
+	return Object.values(THEMES).map((t) => ({
+		name: t.name,
+		displayName: t.displayName,
+	}));
 }
 
 // Get the system's detected timezone
@@ -336,32 +617,34 @@ export const PRIORITY_LABELS: Record<TaskPriority, string> = {
 	urgent: "Urgent",
 };
 
+// Get priority colors from theme
+export function getPriorityColors(theme: Theme): Record<TaskPriority, string> {
+	return {
+		low: theme.colors.priorityLow,
+		medium: theme.colors.priorityMedium,
+		high: theme.colors.priorityHigh,
+		urgent: theme.colors.priorityUrgent,
+	};
+}
+
+// Legacy static exports (for backwards compatibility, uses catppuccin-mocha)
 export const PRIORITY_COLORS: Record<TaskPriority, string> = {
-	low: "gray",
-	medium: "blue",
-	high: "yellow",
-	urgent: "red",
+	low: CATPPUCCIN_MOCHA.colors.priorityLow,
+	medium: CATPPUCCIN_MOCHA.colors.priorityMedium,
+	high: CATPPUCCIN_MOCHA.colors.priorityHigh,
+	urgent: CATPPUCCIN_MOCHA.colors.priorityUrgent,
 };
 
-export const PROJECT_COLORS = [
-	"#3b82f6", // Blue
-	"#10b981", // Green
-	"#f59e0b", // Amber
-	"#ef4444", // Red
-	"#8b5cf6", // Purple
-	"#ec4899", // Pink
-	"#06b6d4", // Cyan
-	"#f97316", // Orange
-];
+export const PROJECT_COLORS = CATPPUCCIN_MOCHA.projectColors;
 
 export const COLORS = {
-	bg: "#171623",
-	border: "#777777",
-	borderOff: "#444444",
-	selectedRowBg: "#3325b4",
-	textPrimary: "#e0e0e0",
-	textSecondary: "#94a3b8",
-	accent: "#3b82f6",
+	bg: CATPPUCCIN_MOCHA.colors.bg,
+	border: CATPPUCCIN_MOCHA.colors.border,
+	borderOff: CATPPUCCIN_MOCHA.colors.borderOff,
+	selectedRowBg: CATPPUCCIN_MOCHA.colors.selectedRowBg,
+	textPrimary: CATPPUCCIN_MOCHA.colors.textPrimary,
+	textSecondary: CATPPUCCIN_MOCHA.colors.textSecondary,
+	accent: CATPPUCCIN_MOCHA.colors.accent,
 };
 
 // Stripe invoice data for display

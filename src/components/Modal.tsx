@@ -1,16 +1,21 @@
-import { COLORS } from "../types";
+import type { Theme } from "../types";
+import { CATPPUCCIN_MOCHA } from "../types";
 
-interface ProjectModalProps {
+interface ModalProps {
   title: string;
   height: number;
   children: any;
+  theme?: Theme;
 }
 
-export default function ProjectModal({
+export default function Modal({
   title,
   height = 10,
   children,
-}: ProjectModalProps) {
+  theme = CATPPUCCIN_MOCHA,
+}: ModalProps) {
+  const colors = theme.colors;
+
   return (
     <box
       style={{
@@ -22,14 +27,14 @@ export default function ProjectModal({
         marginTop: -Math.floor(height / 2),
         marginLeft: -30,
         border: true,
-        borderColor: COLORS.border,
+        borderColor: colors.border,
         flexDirection: "column",
-        backgroundColor: COLORS.bg,
+        backgroundColor: colors.bg,
         padding: 1,
         zIndex: 99999,
       }}
     >
-      <text fg="#ffffff" attributes="bold">
+      <text fg={colors.textPrimary} attributes="bold">
         {title}
       </text>
       {children}

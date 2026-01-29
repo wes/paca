@@ -1,12 +1,14 @@
-import { COLORS, getSystemTimezone } from "../types.ts";
-import type { AppSettings } from "../types.ts";
+import { getSystemTimezone, getTheme, getThemeDisplayNames } from "../types.ts";
+import type { AppSettings, Theme } from "../types.ts";
 
 interface SettingsViewProps {
   settings: AppSettings;
   selectedIndex: number;
+  theme: Theme;
   onEditBusinessName: () => void;
   onEditStripeKey: () => void;
   onEditTimezone: () => void;
+  onSelectTheme: () => void;
   onExportDatabase: () => void;
   onImportDatabase: () => void;
 }
@@ -14,6 +16,7 @@ interface SettingsViewProps {
 const SETTINGS_ITEMS = [
   { key: "businessName", label: "Business Name", type: "text" },
   { key: "stripeApiKey", label: "Stripe API Key", type: "secret" },
+  { key: "theme", label: "Theme", type: "select" },
   { key: "timezone", label: "Timezone", type: "text" },
   { key: "exportDatabase", label: "Export Database", type: "action" },
   { key: "importDatabase", label: "Import Database", type: "action" },
@@ -22,12 +25,16 @@ const SETTINGS_ITEMS = [
 export function SettingsView({
   settings,
   selectedIndex,
+  theme,
   onEditBusinessName,
   onEditStripeKey,
   onEditTimezone,
+  onSelectTheme,
   onExportDatabase,
   onImportDatabase,
 }: SettingsViewProps) {
+  const colors = theme.colors;
+
   const maskSecret = (value: string) => {
     if (!value) return "(not set)";
     if (value.length <= 8) return "*".repeat(value.length);
@@ -41,8 +48,15 @@ export function SettingsView({
     return tz;
   };
 
+  const getThemeDisplay = () => {
+    const currentTheme = getTheme(settings.theme);
+    return currentTheme.displayName;
+  };
+
   const getValue = (key: string) => {
     switch (key) {
+      case "theme":
+        return getThemeDisplay();
       case "businessName":
         return settings.businessName || "(not set)";
       case "stripeApiKey":
@@ -60,6 +74,8 @@ export function SettingsView({
 
   const getAction = (key: string) => {
     switch (key) {
+      case "theme":
+        return onSelectTheme;
       case "businessName":
         return onEditBusinessName;
       case "stripeApiKey":
@@ -75,6 +91,12 @@ export function SettingsView({
     }
   };
 
+  const getActionLabel = (type: string) => {
+    if (type === "action") return "run";
+    if (type === "select") return "select";
+    return "edit";
+  };
+
   return (
     <box
       style={{
@@ -84,14 +106,14 @@ export function SettingsView({
       }}
     >
       <box style={{ marginBottom: 1 }}>
-        <text fg="#64748b">Application Settings</text>
+        <text fg={colors.accent}>Application Settings</text>
       </box>
 
       <box
         title="Settings"
         style={{
           border: true,
-          borderColor: "#334155",
+          borderColor: colors.borderSubtle,
           padding: 1,
           flexDirection: "column",
         }}
@@ -105,24 +127,24 @@ export function SettingsView({
                 flexDirection: "row",
                 paddingLeft: 1,
                 paddingRight: 1,
-                backgroundColor: isSelected ? COLORS.selectedRowBg : "transparent",
+                backgroundColor: isSelected ? colors.selectedRowBg : "transparent",
               }}
             >
               <box style={{ width: 20 }}>
                 <text
-                  fg={isSelected ? "#ffffff" : "#e2e8f0"}
+                  fg={isSelected ? colors.selectedText : colors.textPrimary}
                   attributes={isSelected ? "bold" : undefined}
                 >
                   {item.label}
                 </text>
               </box>
               <box style={{ flexGrow: 1 }}>
-                <text fg={isSelected ? "#ffffff" : "#94a3b8"}>
+                <text fg={isSelected ? colors.selectedText : colors.textSecondary}>
                   {getValue(item.key)}
                 </text>
               </box>
               {isSelected && (
-                <text fg="#64748b">[Enter to {item.type === "action" ? "run" : "edit"}]</text>
+                <text fg={colors.accent}>[Enter to {getActionLabel(item.type)}]</text>
               )}
             </box>
           );
@@ -130,13 +152,13 @@ export function SettingsView({
       </box>
 
       <box style={{ marginTop: 2 }}>
-        <text fg="#475569">
+        <text fg={colors.textMuted}>
           Use j/k or arrows to navigate, Enter to select, Esc to go back
         </text>
       </box>
 
       <box style={{ marginTop: 1 }}>
-        <text fg="#475569">Database location: ~/.paca/paca.db</text>
+        <text fg={colors.textMuted}>Database location: ~/.paca/paca.db</text>
       </box>
     </box>
   );

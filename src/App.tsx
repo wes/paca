@@ -19,6 +19,7 @@ import {
 	CustomerSelectModal,
 	EditTimeEntryModal,
 	CreateInvoiceModal,
+	ThemeSelectModal,
 } from "./components/index.ts";
 import { InvoicesView } from "./components/InvoicesView.tsx";
 import {
@@ -35,6 +36,7 @@ import { getOrCreateStripeCustomer, createDraftInvoice, listInvoices, clearInvoi
 import {
 	getEffectiveTimezone,
 	formatDateInTimezone,
+	getTheme,
 	type View,
 	type Panel,
 	type InputMode,
@@ -106,6 +108,7 @@ export function App() {
 		businessName: "",
 		stripeApiKey: "",
 		timezone: "auto",
+		theme: "catppuccin-mocha",
 	});
 
 	// Timesheet State
@@ -851,13 +854,16 @@ export function App() {
 				case 1: // Stripe API Key
 					setInputMode("edit_stripe_key");
 					break;
-				case 2: // Timezone
+				case 2: // Theme
+					setInputMode("select_theme");
+					break;
+				case 3: // Timezone
 					setInputMode("edit_timezone");
 					break;
-				case 3: // Export Database
+				case 4: // Export Database
 					handleExportDatabase();
 					break;
-				case 4: // Import Database
+				case 5: // Import Database
 					setConfirmMessage("Import will replace all data. Continue?");
 					setConfirmAction(() => () => handleImportDatabase());
 					break;
@@ -1163,6 +1169,14 @@ export function App() {
 		showMessage(`Timezone set to ${value === "auto" ? "auto-detect" : value}`);
 	};
 
+	const handleSelectTheme = async (themeName: string) => {
+		await settings.set("theme", themeName);
+		setAppSettings((prev) => ({ ...prev, theme: themeName }));
+		const theme = getTheme(themeName);
+		setInputMode(null);
+		showMessage(`Theme: ${theme.displayName}`);
+	};
+
 	// Modal handlers
 	const handleCreateProject = async (name: string, rate: number | null) => {
 		await projects.create({ name, hourlyRate: rate });
@@ -1381,6 +1395,7 @@ export function App() {
 	};
 
 	const selectedProject = projectList[selectedProjectIndex];
+	const theme = getTheme(appSettings.theme);
 
 	return (
 		<box
@@ -1388,6 +1403,7 @@ export function App() {
 				width: "100%",
 				height: "100%",
 				flexDirection: "column",
+				backgroundColor: theme.colors.bg,
 			}}
 		>
 			<Header
@@ -1395,6 +1411,7 @@ export function App() {
 				onViewChange={setCurrentView}
 				runningTimer={runningTimer}
 				onStopTimer={() => setInputMode("stop_timer")}
+				theme={getTheme(appSettings.theme)}
 			/>
 
 			<box style={{ flexGrow: 1, flexDirection: "row" }}>
@@ -1405,18 +1422,21 @@ export function App() {
 						weeklyTimeData={weeklyTimeData}
 						selectedIndex={selectedDashboardTaskIndex}
 						focused={true}
+						theme={getTheme(appSettings.theme)}
 					/>
 				)}
 
-				{currentView === "help" && <HelpView />}
+				{currentView === "help" && <HelpView theme={getTheme(appSettings.theme)} />}
 
 				{currentView === "settings" && (
 					<SettingsView
 						settings={appSettings}
 						selectedIndex={selectedSettingsIndex}
+						theme={getTheme(appSettings.theme)}
 						onEditBusinessName={() => setInputMode("edit_business_name")}
 						onEditStripeKey={() => setInputMode("edit_stripe_key")}
 						onEditTimezone={() => setInputMode("edit_timezone")}
+						onSelectTheme={() => setInputMode("select_theme")}
 						onExportDatabase={handleExportDatabase}
 						onImportDatabase={() => {
 							setConfirmMessage("Import will replace all data. Continue?");
@@ -1433,6 +1453,7 @@ export function App() {
 						selectedEntryIds={selectedTimeEntryIds}
 						focused={true}
 						timezone={getEffectiveTimezone(appSettings)}
+						theme={getTheme(appSettings.theme)}
 						showAllTimers={showAllTimers}
 						allTimersWeekData={allTimersWeekData}
 						allTimersSelectedIndex={allTimersSelectedIndex}
@@ -1452,6 +1473,7 @@ export function App() {
 						currentPage={invoicesPage}
 						hasMore={invoicesHasMore}
 						hasPrevious={invoicesCursors.length > 0}
+						theme={getTheme(appSettings.theme)}
 					/>
 				)}
 
@@ -1463,6 +1485,7 @@ export function App() {
 								selectedIndex={selectedProjectIndex}
 								focused={activePanel === "projects"}
 								showArchived={showArchived}
+								theme={getTheme(appSettings.theme)}
 							/>
 						</box>
 						<box style={{ width: "60%", flexDirection: "column" }}>
@@ -1471,6 +1494,7 @@ export function App() {
 								selectedIndex={selectedTaskIndex}
 								focused={activePanel === "tasks"}
 								projectName={selectedProject?.name}
+								theme={getTheme(appSettings.theme)}
 							/>
 						</box>
 					</>
@@ -1483,6 +1507,7 @@ export function App() {
 				timerRunning={!!runningTimer}
 				currentView={currentView}
 				activePanel={activePanel}
+				theme={getTheme(appSettings.theme)}
 				showAllTimers={currentView === "timesheets" ? showAllTimers : undefined}
 				allTimersWeekRange={
 					currentView === "timesheets" && showAllTimers && allTimersWeekData
@@ -1506,6 +1531,7 @@ export function App() {
 					mode="create"
 					onSubmit={handleCreateProject}
 					onCancel={() => setInputMode(null)}
+					theme={theme}
 				/>
 			)}
 
@@ -1516,6 +1542,7 @@ export function App() {
 					initialRate={selectedProject.hourlyRate}
 					onSubmit={handleEditProject}
 					onCancel={() => setInputMode(null)}
+					theme={theme}
 				/>
 			)}
 
@@ -1526,6 +1553,7 @@ export function App() {
 					placeholder="Task title..."
 					onSubmit={handleCreateTask}
 					onCancel={() => setInputMode(null)}
+					theme={theme}
 				/>
 			)}
 
@@ -1537,6 +1565,7 @@ export function App() {
 					placeholder="Task title..."
 					onSubmit={handleEditTask}
 					onCancel={() => setInputMode(null)}
+					theme={theme}
 				/>
 			)}
 
@@ -1549,6 +1578,7 @@ export function App() {
 						placeholder="Task title..."
 						onSubmit={handleEditDashboardTask}
 						onCancel={() => setInputMode(null)}
+						theme={theme}
 					/>
 				)}
 
@@ -1560,6 +1590,7 @@ export function App() {
 					placeholder="Enter business name..."
 					onSubmit={handleUpdateBusinessName}
 					onCancel={() => setInputMode(null)}
+					theme={theme}
 				/>
 			)}
 
@@ -1571,6 +1602,7 @@ export function App() {
 					placeholder="sk_live_..."
 					onSubmit={handleUpdateStripeKey}
 					onCancel={() => setInputMode(null)}
+					theme={theme}
 				/>
 			)}
 
@@ -1582,6 +1614,15 @@ export function App() {
 					placeholder="America/New_York, Europe/London, auto..."
 					onSubmit={handleUpdateTimezone}
 					onCancel={() => setInputMode(null)}
+					theme={theme}
+				/>
+			)}
+
+			{inputMode === "select_theme" && (
+				<ThemeSelectModal
+					currentTheme={appSettings.theme}
+					onSelect={handleSelectTheme}
+					onCancel={() => setInputMode(null)}
 				/>
 			)}
 
@@ -1590,6 +1631,7 @@ export function App() {
 					projects={projectList.filter((p) => !p.archived)}
 					onSelect={handleStartTimer}
 					onCancel={() => setInputMode(null)}
+					theme={theme}
 				/>
 			)}
 
@@ -1600,6 +1642,7 @@ export function App() {
 					duration={formatDuration(timerElapsed)}
 					onSubmit={handleStopTimer}
 					onCancel={() => setInputMode(null)}
+					theme={theme}
 				/>
 			)}
 
@@ -1615,6 +1658,7 @@ export function App() {
 						setInputMode("edit_customer");
 					}}
 					onCancel={() => setInputMode(null)}
+					theme={theme}
 				/>
 			)}
 
@@ -1623,6 +1667,7 @@ export function App() {
 					mode="create"
 					onSubmit={handleCreateCustomer}
 					onCancel={() => setInputMode("select_customer")}
+					theme={theme}
 				/>
 			)}
 
@@ -1637,6 +1682,7 @@ export function App() {
 						setEditingCustomer(null);
 						setInputMode("select_customer");
 					}}
+					theme={theme}
 				/>
 			)}
 
@@ -1649,6 +1695,7 @@ export function App() {
 						setInputMode(null);
 						setEditingTimeEntry(null);
 					}}
+					theme={theme}
 				/>
 			)}
 
@@ -1680,6 +1727,7 @@ export function App() {
 						hasStripeKey={!!appSettings.stripeApiKey}
 						onConfirm={handleCreateInvoice}
 						onCancel={() => setInputMode(null)}
+						theme={theme}
 					/>
 				)}
 
@@ -1696,6 +1744,7 @@ export function App() {
 						setConfirmAction(null);
 						setConfirmMessage("");
 					}}
+					theme={theme}
 				/>
 			)}
 		</box>
