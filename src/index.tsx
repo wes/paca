@@ -138,6 +138,14 @@ function showSplash(theme: Theme): boolean {
 }
 
 async function main() {
+	// Handle menubar subcommand before TUI setup
+	const args = process.argv.slice(2);
+	if (args[0] === "menubar") {
+		const { menubarCommand } = await import("./menubar/index.ts");
+		await menubarCommand(args.slice(1));
+		return;
+	}
+
 	// Get stored theme and show splash with ASCII paca
 	const theme = getStoredTheme();
 	const splashShown = showSplash(theme);

@@ -66,6 +66,7 @@
     "@prisma/adapter-libsql": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "better-sqlite3": "^12.6.0",
+    "paca4": ".",
     "prisma": "^7.2.0",
     "react": "^19.2.3",
     "stripe": "^20.2.0"
