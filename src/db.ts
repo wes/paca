@@ -631,6 +631,7 @@ export const settings = {
       stripeApiKey: all.stripeApiKey ?? "",
       timezone: all.timezone ?? "auto",
       theme: all.theme ?? "catppuccin-mocha",
+      menuBar: all.menuBar ?? "disabled",
     };
   },
 };

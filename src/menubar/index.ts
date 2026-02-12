@@ -1,55 +1,168 @@
-import { existsSync, writeFileSync, unlinkSync, chmodSync } from "fs";
-import { join } from "path";
+import { existsSync, writeFileSync, unlinkSync, readFileSync } from "fs";
+import { join, dirname } from "path";
 import { homedir } from "os";
-import { execSync } from "child_process";
-import { getPluginScript } from "./plugin.ts";
-import { getActionScript } from "./action.ts";
+import { execSync, spawn } from "child_process";
+import { getSwiftSource } from "./swift-source.ts";
 import { getRunningTimer, getProjects } from "./db-lite.ts";
 
-const PLUGIN_FILENAME = "paca-timer.3s.ts";
-const ACTION_FILENAME = "menubar-action.ts";
 const PACA_DIR = join(homedir(), ".paca");
-const ACTION_PATH = join(PACA_DIR, ACTION_FILENAME);
+const BINARY_PATH = join(PACA_DIR, "paca-menubar");
+const SWIFT_PATH = join(PACA_DIR, "paca-menubar.swift");
+const PID_PATH = join(PACA_DIR, "menubar.pid");
+const ICON_PATH = join(PACA_DIR, "paca-icon.png");
 
-function resolveBunPath(): string {
+function hasSwiftCompiler(): boolean {
   try {
-    return execSync("which bun", { encoding: "utf-8" }).trim();
+    execSync("which swiftc", { encoding: "utf-8", stdio: "pipe" });
+    return true;
   } catch {
-    throw new Error("Could not find bun in PATH. Is Bun installed?");
+    return false;
   }
 }
 
-function findSwiftBarPluginDir(): string | null {
-  // Try reading from SwiftBar defaults
+function prepareMascotIcon(): string {
+  // Find the mascot image relative to source directory
+  const srcDir = dirname(dirname(import.meta.dir));
+  const mascotPath = join(srcDir, "assets", "paca-mascot.png");
+
+  if (!existsSync(mascotPath)) {
+    return "";
+  }
+
   try {
-    const dir = execSync(
-      "defaults read com.ameba.SwiftBar PluginDirectory 2>/dev/null",
-      { encoding: "utf-8" },
-    ).trim();
-    if (dir && existsSync(dir)) return dir;
+    // Resize to 36x36 (18pt @2x retina) using sips (built into macOS)
+    execSync(
+      `sips --resampleHeight 36 ${JSON.stringify(mascotPath)} --out ${JSON.stringify(ICON_PATH)} 2>/dev/null`,
+      { encoding: "utf-8", stdio: "pipe" },
+    );
+    const iconData = readFileSync(ICON_PATH);
+    unlinkSync(ICON_PATH);
+    return iconData.toString("base64");
   } catch {
-    // ignore
+    return "";
   }
-
-  // Check common locations
-  const candidates = [
-    join(homedir(), "Library", "Application Support", "SwiftBar", "Plugins"),
-    join(homedir(), ".swiftbar"),
-  ];
-
-  for (const dir of candidates) {
-    if (existsSync(dir)) return dir;
-  }
-
-  return null;
 }
 
-function isSwiftBarInstalled(): boolean {
-  return (
-    existsSync("/Applications/SwiftBar.app") ||
-    existsSync(join(homedir(), "Applications", "SwiftBar.app"))
-  );
+function compileBinary(): boolean {
+  const iconBase64 = prepareMascotIcon();
+  writeFileSync(SWIFT_PATH, getSwiftSource(iconBase64), "utf-8");
+  try {
+    execSync(
+      `swiftc -O -o ${JSON.stringify(BINARY_PATH)} ${JSON.stringify(SWIFT_PATH)} -framework Cocoa -lsqlite3 2>&1`,
+      { encoding: "utf-8", timeout: 60_000 },
+    );
+    unlinkSync(SWIFT_PATH);
+    return true;
+  } catch (error: any) {
+    console.error("Failed to compile menu bar helper:");
+    console.error(error.stdout || error.message);
+    if (existsSync(SWIFT_PATH)) unlinkSync(SWIFT_PATH);
+    return false;
+  }
 }
+
+function readPid(): number | null {
+  try {
+    const pid = parseInt(readFileSync(PID_PATH, "utf-8").trim(), 10);
+    return isNaN(pid) ? null : pid;
+  } catch {
+    return null;
+  }
+}
+
+function isProcessRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function isMenuBarRunning(): boolean {
+  const pid = readPid();
+  return pid !== null && isProcessRunning(pid);
+}
+
+function launchHelper(): boolean {
+  if (!existsSync(BINARY_PATH)) return false;
+
+  const child = spawn(BINARY_PATH, [], {
+    detached: true,
+    stdio: "ignore",
+  });
+
+  if (child.pid) {
+    writeFileSync(PID_PATH, String(child.pid), "utf-8");
+    child.unref();
+    return true;
+  }
+  return false;
+}
+
+function killHelper(): boolean {
+  const pid = readPid();
+  if (pid === null) return false;
+
+  try {
+    process.kill(pid, "SIGTERM");
+  } catch {
+    // Process already gone
+  }
+
+  if (existsSync(PID_PATH)) unlinkSync(PID_PATH);
+  return true;
+}
+
+/**
+ * Enable the menu bar helper. Called from settings toggle or CLI.
+ * Returns a status message string.
+ */
+export async function enableMenuBar(): Promise<string> {
+  if (isMenuBarRunning()) {
+    return "Menu bar is already running.";
+  }
+
+  if (!hasSwiftCompiler()) {
+    return "Xcode Command Line Tools required. Install with: xcode-select --install";
+  }
+
+  // Compile if binary doesn't exist
+  if (!existsSync(BINARY_PATH)) {
+    const ok = compileBinary();
+    if (!ok) return "Failed to compile menu bar helper.";
+  }
+
+  const launched = launchHelper();
+  if (!launched) return "Failed to launch menu bar helper.";
+
+  return "Menu bar enabled.";
+}
+
+/**
+ * Disable the menu bar helper. Called from settings toggle or CLI.
+ * Returns a status message string.
+ */
+export async function disableMenuBar(): Promise<string> {
+  killHelper();
+
+  // Remove binary
+  if (existsSync(BINARY_PATH)) unlinkSync(BINARY_PATH);
+
+  return "Menu bar disabled.";
+}
+
+/**
+ * Ensure the helper is running if the setting is enabled.
+ * Called on paca startup — no-op if already running or not enabled.
+ */
+export function ensureMenuBarRunning(): void {
+  if (isMenuBarRunning()) return;
+  if (!existsSync(BINARY_PATH)) return;
+  launchHelper();
+}
+
+// --- CLI ---
 
 function formatElapsed(startTimeStr: string): string {
   const startMs = new Date(startTimeStr + "Z").getTime();
@@ -61,82 +174,27 @@ function formatElapsed(startTimeStr: string): string {
   return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-async function install() {
-  if (!isSwiftBarInstalled()) {
-    console.log("SwiftBar is not installed.");
-    console.log("");
-    console.log("Install it with:");
-    console.log("  brew install --cask swiftbar");
-    console.log("");
-    console.log("Then run this command again:");
-    console.log("  paca menubar install");
-    process.exit(1);
-  }
-
-  const pluginDir = findSwiftBarPluginDir();
-  if (!pluginDir) {
-    console.log("Could not find SwiftBar plugin directory.");
-    console.log("");
-    console.log("Make sure SwiftBar has been launched at least once,");
-    console.log("or set a plugin directory in SwiftBar preferences.");
-    process.exit(1);
-  }
-
-  const bunPath = resolveBunPath();
-  const pluginPath = join(pluginDir, PLUGIN_FILENAME);
-
-  // Write plugin script
-  writeFileSync(pluginPath, getPluginScript(bunPath), "utf-8");
-  chmodSync(pluginPath, 0o755);
-
-  // Write action script
-  writeFileSync(ACTION_PATH, getActionScript(bunPath), "utf-8");
-  chmodSync(ACTION_PATH, 0o755);
-
-  console.log("Paca menu bar plugin installed!");
-  console.log("");
-  console.log(`  Plugin: ${pluginPath}`);
-  console.log(`  Action: ${ACTION_PATH}`);
-  console.log("");
-  console.log("The timer should appear in your menu bar shortly.");
-  console.log("If not, open SwiftBar and refresh plugins.");
+async function cliEnable() {
+  console.log("Compiling menu bar helper...");
+  const msg = await enableMenuBar();
+  console.log(msg);
 }
 
-async function uninstall() {
-  let removed = false;
-
-  // Remove plugin
-  const pluginDir = findSwiftBarPluginDir();
-  if (pluginDir) {
-    const pluginPath = join(pluginDir, PLUGIN_FILENAME);
-    if (existsSync(pluginPath)) {
-      unlinkSync(pluginPath);
-      console.log(`Removed plugin: ${pluginPath}`);
-      removed = true;
-    }
-  }
-
-  // Remove action script
-  if (existsSync(ACTION_PATH)) {
-    unlinkSync(ACTION_PATH);
-    console.log(`Removed action script: ${ACTION_PATH}`);
-    removed = true;
-  }
-
-  if (removed) {
-    console.log("");
-    console.log("Paca menu bar plugin uninstalled.");
-  } else {
-    console.log("No menu bar plugin files found to remove.");
-  }
+async function cliDisable() {
+  const msg = await disableMenuBar();
+  console.log(msg);
 }
 
-function status() {
-  const DB_PATH = join(PACA_DIR, "paca.db");
-  if (!existsSync(DB_PATH)) {
+function cliStatus() {
+  const dbPath = join(PACA_DIR, "paca.db");
+  if (!existsSync(dbPath)) {
     console.log("No database found. Run paca to initialize.");
     return;
   }
+
+  console.log(`Menu bar: ${isMenuBarRunning() ? "running" : "not running"}`);
+  console.log(`Binary: ${existsSync(BINARY_PATH) ? "compiled" : "not compiled"}`);
+  console.log("");
 
   const running = getRunningTimer();
   if (running) {
@@ -146,64 +204,37 @@ function status() {
     console.log("No timer running.");
   }
 
-  const projects = getProjects();
-  if (projects.length > 0) {
+  const allProjects = getProjects();
+  if (allProjects.length > 0) {
     console.log("");
     console.log("Projects:");
-    for (const p of projects) {
+    for (const p of allProjects) {
       console.log(`  - ${p.name}`);
     }
   }
 }
 
 function showHelp() {
-  const running = getRunningTimer();
-  if (running) {
-    const elapsed = formatElapsed(running.startTime);
-    console.log(`Timer: ${running.projectName} (${elapsed})`);
-  } else {
-    console.log("No timer running.");
-  }
-
-  console.log("");
   console.log("Menu bar commands:");
-  console.log("  paca menubar install    Install SwiftBar plugin");
-  console.log("  paca menubar uninstall  Remove SwiftBar plugin");
-  console.log("  paca menubar status     Show current timer status");
+  console.log("  paca menubar enable     Compile & launch menu bar helper");
+  console.log("  paca menubar disable    Stop & remove menu bar helper");
+  console.log("  paca menubar status     Show current status");
   console.log("");
-
-  if (!isSwiftBarInstalled()) {
-    console.log("SwiftBar is not installed. Install it with:");
-    console.log("  brew install --cask swiftbar");
-  } else {
-    const pluginDir = findSwiftBarPluginDir();
-    if (pluginDir) {
-      const pluginPath = join(pluginDir, PLUGIN_FILENAME);
-      if (existsSync(pluginPath)) {
-        console.log("Status: Plugin installed");
-      } else {
-        console.log("Status: SwiftBar found, plugin not installed");
-        console.log("  Run: paca menubar install");
-      }
-    } else {
-      console.log("Status: SwiftBar found, but no plugin directory set");
-      console.log("  Launch SwiftBar first, then run: paca menubar install");
-    }
-  }
+  console.log(`Menu bar: ${isMenuBarRunning() ? "running" : "not running"}`);
+  console.log("");
+  console.log("You can also toggle this from Settings in the TUI.");
 }
 
 export async function menubarCommand(args: string[]) {
-  const subcommand = args[0];
-
-  switch (subcommand) {
-    case "install":
-      await install();
+  switch (args[0]) {
+    case "enable":
+      await cliEnable();
       break;
-    case "uninstall":
-      await uninstall();
+    case "disable":
+      await cliDisable();
       break;
     case "status":
-      status();
+      cliStatus();
       break;
     default:
       showHelp();

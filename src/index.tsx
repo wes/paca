@@ -185,6 +185,21 @@ async function main() {
 	// Clean up tasks that have been done for more than 3 days
 	await cleanupOldCompletedTasks(3);
 
+	// Auto-launch menu bar helper if enabled
+	try {
+		const db2 = new Database(DB_PATH, { readonly: true });
+		const menuBarSetting = db2
+			.query("SELECT value FROM Setting WHERE key = 'menuBar'")
+			.get() as { value: string } | null;
+		db2.close();
+		if (menuBarSetting?.value === "enabled") {
+			const { ensureMenuBarRunning } = await import("./menubar/index.ts");
+			ensureMenuBarRunning();
+		}
+	} catch {
+		// Non-critical — skip if menu bar can't be launched
+	}
+
 	// Handle cleanup on exit - must stop renderer to restore terminal state
 	const cleanup = async () => {
 		if (renderer) {

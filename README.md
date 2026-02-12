@@ -16,6 +16,7 @@ A simple TUI app for task, timer and invoicing for projects.
 - **Stripe Invoicing** - Create draft invoices directly from time entries
 - **Invoice Management** - View and manage all your Stripe invoices
 - **Dashboard** - Overview of projects, tasks, and time stats
+- **Menu Bar** - Native macOS menu bar companion for quick timer control
 - **Offline-first** - All data stored locally in SQLite
 - **Vim-style Navigation** - Keyboard-driven interface
 
@@ -120,12 +121,34 @@ Access settings by pressing `5`:
 - **Business Name** - Your business name for invoices
 - **Stripe API Key** - Enable invoicing features
 - **Timezone** - Set display timezone (or auto-detect)
+- **Menu Bar** - Toggle the macOS menu bar companion
 - **Export/Import** - Backup and restore your data
 
 ### Data Location
 
 - Database: `~/.paca/paca.db`
 - Backups: `~/.paca/backups/`
+
+## Menu Bar (macOS)
+
+Paca includes a native macOS menu bar companion that shows your running timer and lets you start/stop timers without opening the TUI.
+
+### Enable via Settings
+
+1. Press `5` to open Settings
+2. Select **Menu Bar** and press `Enter` to toggle it on
+
+### Enable via CLI
+
+```bash
+paca menubar enable    # Compile & launch
+paca menubar disable   # Stop & remove
+paca menubar status    # Show current status
+```
+
+The first time you enable it, Paca compiles a small native Swift helper binary (requires Xcode Command Line Tools). The paca mascot icon appears in your menu bar with live timer status.
+
+**Requires**: Xcode Command Line Tools (`xcode-select --install`)
 
 ## Stripe Integration
 

@@ -109,6 +109,7 @@ export function App() {
 		stripeApiKey: "",
 		timezone: "auto",
 		theme: "catppuccin-mocha",
+		menuBar: "disabled",
 	});
 
 	// Timesheet State
@@ -362,6 +363,30 @@ export function App() {
 		loadRunningTimer();
 		loadSettings();
 		loadCustomers();
+	}, []);
+
+	// Poll for external timer changes (e.g. from menu bar)
+	// Uses bun:sqlite directly to bypass Prisma's connection cache
+	useEffect(() => {
+		const poll = setInterval(async () => {
+			const { getRunningTimer: getRunningTimerLite } = await import("./menubar/db-lite.ts");
+			const row = getRunningTimerLite();
+			if (row) {
+				setRunningTimer({
+					id: row.id,
+					startTime: new Date(row.startTime.includes("T") ? row.startTime : row.startTime + "Z"),
+					project: {
+						id: row.projectId,
+						name: row.projectName,
+						color: row.projectColor,
+						hourlyRate: row.projectHourlyRate,
+					},
+				});
+			} else {
+				setRunningTimer(null);
+			}
+		}, 5000);
+		return () => clearInterval(poll);
 	}, []);
 
 	// Reload tasks when project selection changes
@@ -860,10 +885,13 @@ export function App() {
 				case 3: // Timezone
 					setInputMode("edit_timezone");
 					break;
-				case 4: // Export Database
+				case 4: // Menu Bar
+					handleToggleMenuBar();
+					break;
+				case 5: // Export Database
 					handleExportDatabase();
 					break;
-				case 5: // Import Database
+				case 6: // Import Database
 					setConfirmMessage("Import will replace all data. Continue?");
 					setConfirmAction(() => () => handleImportDatabase());
 					break;
@@ -1177,6 +1205,18 @@ export function App() {
 		showMessage(`Theme: ${theme.displayName}`);
 	};
 
+	const handleToggleMenuBar = async () => {
+		const newValue = appSettings.menuBar === "enabled" ? "disabled" : "enabled";
+		await settings.set("menuBar", newValue);
+		setAppSettings((prev) => ({ ...prev, menuBar: newValue }));
+
+		const { enableMenuBar, disableMenuBar } = await import("./menubar/index.ts");
+		const msg = newValue === "enabled"
+			? await enableMenuBar()
+			: await disableMenuBar();
+		showMessage(msg);
+	};
+
 	// Modal handlers
 	const handleCreateProject = async (name: string, rate: number | null) => {
 		await projects.create({ name, hourlyRate: rate });
@@ -1437,6 +1477,7 @@ export function App() {
 						onEditStripeKey={() => setInputMode("edit_stripe_key")}
 						onEditTimezone={() => setInputMode("edit_timezone")}
 						onSelectTheme={() => setInputMode("select_theme")}
+						onToggleMenuBar={handleToggleMenuBar}
 						onExportDatabase={handleExportDatabase}
 						onImportDatabase={() => {
 							setConfirmMessage("Import will replace all data. Continue?");

@@ -102,6 +102,7 @@ export interface AppSettings {
 	stripeApiKey: string;
 	timezone: string; // IANA timezone (e.g., "America/New_York") or "auto" for system detection
 	theme: string; // Theme name (e.g., "catppuccin-mocha", "neon")
+	menuBar: string; // "enabled" or "disabled"
 }
 
 // Theme color definitions

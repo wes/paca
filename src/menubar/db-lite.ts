@@ -4,10 +4,16 @@ import { homedir } from "os";
 
 const DB_PATH = join(homedir(), ".paca", "paca.db");
 
-function openDb(): Database {
-  const db = new Database(DB_PATH);
-  db.exec("PRAGMA journal_mode=WAL");
+function openReadonly(): Database {
+  const db = new Database(DB_PATH, { readonly: true });
   db.exec("PRAGMA busy_timeout=5000");
+  return db;
+}
+
+function openReadWrite(): Database {
+  const db = new Database(DB_PATH);
+  db.exec("PRAGMA busy_timeout=5000");
+  db.exec("PRAGMA journal_mode=WAL");
   return db;
 }
 
@@ -17,6 +23,7 @@ export interface RunningTimerRow {
   projectId: string;
   projectName: string;
   projectColor: string;
+  projectHourlyRate: number | null;
 }
 
 export interface ProjectRow {
@@ -26,12 +33,13 @@ export interface ProjectRow {
 }
 
 export function getRunningTimer(): RunningTimerRow | null {
-  const db = openDb();
+  const db = openReadonly();
   try {
     const row = db
       .query<RunningTimerRow, []>(
         `SELECT te.id, te.startTime, te.projectId,
-                p.name AS projectName, p.color AS projectColor
+                p.name AS projectName, p.color AS projectColor,
+                p.hourlyRate AS projectHourlyRate
          FROM TimeEntry te
          JOIN Project p ON p.id = te.projectId
          WHERE te.endTime IS NULL
@@ -45,7 +53,7 @@ export function getRunningTimer(): RunningTimerRow | null {
 }
 
 export function getProjects(): ProjectRow[] {
-  const db = openDb();
+  const db = openReadonly();
   try {
     return db
       .query<ProjectRow, []>(
@@ -58,7 +66,7 @@ export function getProjects(): ProjectRow[] {
 }
 
 export function startTimer(projectId: string): void {
-  const db = openDb();
+  const db = openReadWrite();
   try {
     // Stop any running timer first
     const running = db
@@ -84,7 +92,7 @@ export function startTimer(projectId: string): void {
 }
 
 export function stopTimer(entryId: string, description?: string): void {
-  const db = openDb();
+  const db = openReadWrite();
   try {
     db.query(
       `UPDATE TimeEntry SET endTime = datetime('now'), description = ?, updatedAt = datetime('now') WHERE id = ?`,

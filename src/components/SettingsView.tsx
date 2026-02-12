@@ -9,6 +9,7 @@ interface SettingsViewProps {
   onEditStripeKey: () => void;
   onEditTimezone: () => void;
   onSelectTheme: () => void;
+  onToggleMenuBar: () => void;
   onExportDatabase: () => void;
   onImportDatabase: () => void;
 }
@@ -18,6 +19,7 @@ const SETTINGS_ITEMS = [
   { key: "stripeApiKey", label: "Stripe API Key", type: "secret" },
   { key: "theme", label: "Theme", type: "select" },
   { key: "timezone", label: "Timezone", type: "text" },
+  { key: "menuBar", label: "Menu Bar", type: "toggle" },
   { key: "exportDatabase", label: "Export Database", type: "action" },
   { key: "importDatabase", label: "Import Database", type: "action" },
 ] as const;
@@ -30,6 +32,7 @@ export function SettingsView({
   onEditStripeKey,
   onEditTimezone,
   onSelectTheme,
+  onToggleMenuBar,
   onExportDatabase,
   onImportDatabase,
 }: SettingsViewProps) {
@@ -63,6 +66,8 @@ export function SettingsView({
         return maskSecret(settings.stripeApiKey);
       case "timezone":
         return formatTimezone(settings.timezone);
+      case "menuBar":
+        return settings.menuBar === "enabled" ? "Enabled" : "Disabled";
       case "exportDatabase":
         return "Export to file...";
       case "importDatabase":
@@ -82,6 +87,8 @@ export function SettingsView({
         return onEditStripeKey;
       case "timezone":
         return onEditTimezone;
+      case "menuBar":
+        return onToggleMenuBar;
       case "exportDatabase":
         return onExportDatabase;
       case "importDatabase":
@@ -94,6 +101,7 @@ export function SettingsView({
   const getActionLabel = (type: string) => {
     if (type === "action") return "run";
     if (type === "select") return "select";
+    if (type === "toggle") return "toggle";
     return "edit";
   };
 
