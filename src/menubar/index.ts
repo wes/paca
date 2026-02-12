@@ -23,7 +23,7 @@ function hasSwiftCompiler(): boolean {
 function prepareMascotIcon(): string {
   // Find the mascot image relative to source directory
   const srcDir = dirname(dirname(import.meta.dir));
-  const mascotPath = join(srcDir, "assets", "paca-mascot.png");
+  const mascotPath = join(srcDir, "assets", "paca-icon.png");
 
   if (!existsSync(mascotPath)) {
     return "";
