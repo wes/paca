@@ -20,6 +20,7 @@ import {
 	EditTimeEntryModal,
 	CreateInvoiceModal,
 	ThemeSelectModal,
+	DatabaseSelectModal,
 } from "./components/index.ts";
 import { InvoicesView } from "./components/InvoicesView.tsx";
 import {
@@ -31,7 +32,16 @@ import {
 	database,
 	customers,
 	invoices,
+	switchDatabase,
 } from "./db.ts";
+import {
+	getActiveDbFilename,
+	setActiveDbFilename,
+	getActiveDbPath,
+	listDatabases,
+	sanitizeDbName,
+	getPacaDir,
+} from "./db-path.ts";
 import { getOrCreateStripeCustomer, createDraftInvoice, listInvoices, clearInvoiceCache, type StripeInvoiceItem } from "./stripe.ts";
 import {
 	getEffectiveTimezone,
@@ -151,6 +161,9 @@ export function App() {
 	const [invoicesPage, setInvoicesPage] = useState(1);
 	const [invoicesHasMore, setInvoicesHasMore] = useState(false);
 	const [invoicesCursors, setInvoicesCursors] = useState<string[]>([]); // Stack of cursors for pagination
+
+	// Database State
+	const [currentDbFilename, setCurrentDbFilename] = useState(getActiveDbFilename());
 
 	// Modal State
 	const [inputMode, setInputMode] = useState<InputMode | null>(null);
@@ -498,11 +511,16 @@ export function App() {
 			return;
 		}
 
-		// Handle input mode escape (except select_timer_project which has its own handler)
-		if (inputMode && inputMode !== "select_timer_project") {
+		// Handle input mode escape (except modals that handle their own escape)
+		if (inputMode && inputMode !== "select_timer_project" && inputMode !== "select_database" && inputMode !== "create_database_name") {
 			if (key.name === "escape") {
 				setInputMode(null);
 			}
+			return;
+		}
+
+		// Handle select_database and create_database_name modals (they have their own handlers)
+		if (inputMode === "select_database" || inputMode === "create_database_name") {
 			return;
 		}
 
@@ -871,6 +889,7 @@ export function App() {
 		}
 
 		// Select/activate setting
+		// Order matches: Business (0: businessName, 1: stripeApiKey) + App (2: database, 3: theme, 4: timezone, 5: menuBar, 6: export, 7: import)
 		if (key.name === "return") {
 			switch (selectedSettingsIndex) {
 				case 0: // Business Name
@@ -879,19 +898,22 @@ export function App() {
 				case 1: // Stripe API Key
 					setInputMode("edit_stripe_key");
 					break;
-				case 2: // Theme
+				case 2: // Database
+					setInputMode("select_database");
+					break;
+				case 3: // Theme
 					setInputMode("select_theme");
 					break;
-				case 3: // Timezone
+				case 4: // Timezone
 					setInputMode("edit_timezone");
 					break;
-				case 4: // Menu Bar
+				case 5: // Menu Bar
 					handleToggleMenuBar();
 					break;
-				case 5: // Export Database
+				case 6: // Export Database
 					handleExportDatabase();
 					break;
-				case 6: // Import Database
+				case 7: // Import Database
 					setConfirmMessage("Import will replace all data. Continue?");
 					setConfirmAction(() => () => handleImportDatabase());
 					break;
@@ -1160,7 +1182,8 @@ export function App() {
 		}
 
 		const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-		const exportPath = `${backupDir}/paca-backup-${timestamp}.db`;
+		const dbName = currentDbFilename.replace(/\.db$/, "");
+		const exportPath = `${backupDir}/${dbName}-backup-${timestamp}.db`;
 		try {
 			await database.exportToFile(exportPath);
 			showMessage(`Exported to ${exportPath}`);
@@ -1215,6 +1238,105 @@ export function App() {
 			? await enableMenuBar()
 			: await disableMenuBar();
 		showMessage(msg);
+	};
+
+	// Database handlers
+	const handleSwitchDatabase = async (filename: string) => {
+		if (filename === currentDbFilename) {
+			setInputMode(null);
+			return;
+		}
+
+		try {
+			const { join } = await import("path");
+			const { existsSync } = await import("fs");
+			const dbPath = join(getPacaDir(), filename);
+
+			// Run migration if database file doesn't exist yet
+			if (!existsSync(dbPath)) {
+				const { execSync } = await import("child_process");
+				const { dirname } = await import("path");
+				const projectDir = dirname(dirname(import.meta.path));
+				execSync(`cd "${projectDir}" && bunx prisma migrate deploy`, {
+					stdio: "pipe",
+					env: {
+						...process.env,
+						DATABASE_URL: `file:${dbPath}`,
+					},
+				});
+			}
+
+			// Disable menu bar before switching (it points at the old db)
+			if (appSettings.menuBar === "enabled") {
+				const { disableMenuBar } = await import("./menubar/index.ts");
+				await disableMenuBar();
+				await settings.set("menuBar", "disabled");
+				setAppSettings((prev) => ({ ...prev, menuBar: "disabled" }));
+			}
+
+			// Write .active file
+			setActiveDbFilename(filename);
+
+			// Swap PrismaClient
+			await switchDatabase(dbPath);
+
+			// Update state
+			setCurrentDbFilename(filename);
+
+			// Reload all app state
+			const [settingsData, projectData, dashboardData, recentData, weeklyData, runningData, customerData] = await Promise.all([
+				settings.getAppSettings(),
+				projects.getAll(false),
+				stats.getDashboardStats(),
+				stats.getRecentActivity(10),
+				stats.getWeeklyTimeStats(6),
+				timeEntries.getRunning(),
+				customers.getAll(),
+			]);
+
+			setAppSettings(settingsData);
+			setProjectList(projectData);
+			setDashboardStats(dashboardData);
+			setRecentTasks(recentData as (Task & { project: { name: string; color: string } })[]);
+			setWeeklyTimeData(weeklyData);
+			setCustomerList(customerData);
+
+			if (runningData) {
+				setRunningTimer({
+					id: runningData.id,
+					startTime: runningData.startTime,
+					project: runningData.project,
+				});
+			} else {
+				setRunningTimer(null);
+			}
+
+			// Reset selection indices
+			setSelectedProjectIndex(0);
+			setSelectedTaskIndex(0);
+			setSelectedDashboardTaskIndex(0);
+			setSelectedSettingsIndex(0);
+
+			setInputMode(null);
+			showMessage(`Switched to database: ${filename.replace(/\.db$/, "")}`);
+		} catch (error) {
+			showMessage(`Failed to switch database: ${error}`);
+		}
+	};
+
+	const handleCreateDatabase = async (name: string) => {
+		const filename = sanitizeDbName(name);
+		const { join } = await import("path");
+		const { existsSync } = await import("fs");
+		const dbPath = join(getPacaDir(), filename);
+
+		if (existsSync(dbPath)) {
+			showMessage(`Database "${filename.replace(/\.db$/, "")}" already exists`);
+			setInputMode("select_database");
+			return;
+		}
+
+		await handleSwitchDatabase(filename);
 	};
 
 	// Modal handlers
@@ -1473,6 +1595,8 @@ export function App() {
 						settings={appSettings}
 						selectedIndex={selectedSettingsIndex}
 						theme={getTheme(appSettings.theme)}
+						currentDbFilename={currentDbFilename}
+						onSelectDatabase={() => setInputMode("select_database")}
 						onEditBusinessName={() => setInputMode("edit_business_name")}
 						onEditStripeKey={() => setInputMode("edit_stripe_key")}
 						onEditTimezone={() => setInputMode("edit_timezone")}
@@ -1664,6 +1788,28 @@ export function App() {
 					currentTheme={appSettings.theme}
 					onSelect={handleSelectTheme}
 					onCancel={() => setInputMode(null)}
+				/>
+			)}
+
+			{inputMode === "select_database" && (
+				<DatabaseSelectModal
+					databases={listDatabases()}
+					currentDatabase={currentDbFilename}
+					onSelect={handleSwitchDatabase}
+					onCreateNew={() => setInputMode("create_database_name")}
+					onCancel={() => setInputMode(null)}
+					theme={theme}
+				/>
+			)}
+
+			{inputMode === "create_database_name" && (
+				<InputModal
+					mode={inputMode}
+					title="Create New Database"
+					placeholder="Database name (e.g. work, personal)..."
+					onSubmit={handleCreateDatabase}
+					onCancel={() => setInputMode("select_database")}
+					theme={theme}
 				/>
 			)}
 

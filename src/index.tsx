@@ -6,8 +6,8 @@ import {
 	initDatabase,
 	closeDatabase,
 	cleanupOldCompletedTasks,
-	DB_PATH,
 } from "./db.ts";
+import { getActiveDbPath } from "./db-path.ts";
 import { getTheme, type Theme } from "./types.ts";
 import { execSync } from "child_process";
 import { existsSync, readFileSync } from "fs";
@@ -19,10 +19,10 @@ let renderer: CliRenderer | null = null;
 // Try to read the theme setting from the database
 function getStoredTheme(): Theme {
 	try {
-		if (!existsSync(DB_PATH)) {
+		if (!existsSync(getActiveDbPath())) {
 			return getTheme("catppuccin-mocha");
 		}
-		const db = new Database(DB_PATH, { readonly: true });
+		const db = new Database(getActiveDbPath(), { readonly: true });
 		const result = db
 			.query("SELECT value FROM Setting WHERE key = 'theme'")
 			.get() as { value: string } | null;
@@ -156,7 +156,7 @@ async function main() {
 	}
 
 	// Check if database exists, if not run migration
-	if (!existsSync(DB_PATH)) {
+	if (!existsSync(getActiveDbPath())) {
 		console.log("Initializing Paca database...");
 		try {
 			// Run prisma migration
@@ -165,7 +165,7 @@ async function main() {
 				stdio: "inherit",
 				env: {
 					...process.env,
-					DATABASE_URL: `file:${DB_PATH}`,
+					DATABASE_URL: `file:${getActiveDbPath()}`,
 				},
 			});
 			console.log("Database initialized successfully!");
@@ -173,6 +173,14 @@ async function main() {
 			console.error("Failed to initialize database:", error);
 			process.exit(1);
 		}
+	}
+
+	// Daily auto-backup (rolling 30 days)
+	try {
+		const { performDailyBackup } = await import("./db-path.ts");
+		performDailyBackup();
+	} catch {
+		// Non-critical — skip if backup fails
 	}
 
 	// Initialize database connection
@@ -187,7 +195,7 @@ async function main() {
 
 	// Auto-launch menu bar helper if enabled
 	try {
-		const db2 = new Database(DB_PATH, { readonly: true });
+		const db2 = new Database(getActiveDbPath(), { readonly: true });
 		const menuBarSetting = db2
 			.query("SELECT value FROM Setting WHERE key = 'menuBar'")
 			.get() as { value: string } | null;

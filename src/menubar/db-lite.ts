@@ -1,17 +1,14 @@
 import Database from "bun:sqlite";
-import { join } from "path";
-import { homedir } from "os";
-
-const DB_PATH = join(homedir(), ".paca", "paca.db");
+import { getActiveDbPath } from "../db-path.ts";
 
 function openReadonly(): Database {
-  const db = new Database(DB_PATH, { readonly: true });
+  const db = new Database(getActiveDbPath(), { readonly: true });
   db.exec("PRAGMA busy_timeout=5000");
   return db;
 }
 
 function openReadWrite(): Database {
-  const db = new Database(DB_PATH);
+  const db = new Database(getActiveDbPath());
   db.exec("PRAGMA busy_timeout=5000");
   db.exec("PRAGMA journal_mode=WAL");
   return db;

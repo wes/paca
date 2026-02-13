@@ -69,7 +69,9 @@ export type InputMode =
 	| "confirm_delete_time_entry"
 	| "create_customer"
 	| "edit_customer"
-	| "select_customer";
+	| "select_customer"
+	| "select_database"
+	| "create_database_name";
 
 export interface RunningTimer {
 	id: string;

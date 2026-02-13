@@ -1,25 +1,27 @@
 import { PrismaClient } from "../generated/prisma/client.ts";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
-import { existsSync, mkdirSync } from "fs";
-import { join } from "path";
-import { homedir } from "os";
+import { getActiveDbPath } from "./db-path.ts";
 
-// Ensure the .paca directory exists in user's home
-const pacaDir = join(homedir(), ".paca");
-if (!existsSync(pacaDir)) {
-  mkdirSync(pacaDir, { recursive: true });
+// Get current database path (reads active db each time)
+export function getDbPath(): string {
+  return getActiveDbPath();
 }
 
-// Database path
-export const DB_PATH = join(pacaDir, "paca.db");
-
-// Create adapter factory
-const adapterFactory = new PrismaLibSql({
-  url: `file:${DB_PATH}`,
-});
+// Create a new PrismaClient for a given database path
+function createClient(dbPath: string): PrismaClient {
+  const adapter = new PrismaLibSql({ url: `file:${dbPath}` });
+  return new PrismaClient({ adapter });
+}
 
 // Create Prisma client with adapter
-export const db = new PrismaClient({ adapter: adapterFactory });
+export let db = createClient(getDbPath());
+
+// Switch to a different database
+export async function switchDatabase(dbPath: string): Promise<void> {
+  await db.$disconnect();
+  db = createClient(dbPath);
+  await db.$connect();
+}
 
 // Initialize database connection
 export async function initDatabase() {
@@ -738,7 +740,7 @@ export const invoices = {
 export const database = {
   async exportToFile(targetPath: string): Promise<void> {
     const { copyFileSync } = await import("fs");
-    copyFileSync(DB_PATH, targetPath);
+    copyFileSync(getDbPath(), targetPath);
   },
 
   async importFromFile(sourcePath: string): Promise<void> {
@@ -748,7 +750,7 @@ export const database = {
     }
     // Close connection, copy file, reconnect
     await db.$disconnect();
-    copyFileSync(sourcePath, DB_PATH);
+    copyFileSync(sourcePath, getDbPath());
     await db.$connect();
   },
 };

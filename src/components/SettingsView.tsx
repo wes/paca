@@ -5,6 +5,8 @@ interface SettingsViewProps {
   settings: AppSettings;
   selectedIndex: number;
   theme: Theme;
+  currentDbFilename: string;
+  onSelectDatabase: () => void;
   onEditBusinessName: () => void;
   onEditStripeKey: () => void;
   onEditTimezone: () => void;
@@ -14,20 +16,30 @@ interface SettingsViewProps {
   onImportDatabase: () => void;
 }
 
-const SETTINGS_ITEMS = [
+type SettingsItem = { key: string; label: string; type: string };
+
+const BUSINESS_SETTINGS: SettingsItem[] = [
   { key: "businessName", label: "Business Name", type: "text" },
   { key: "stripeApiKey", label: "Stripe API Key", type: "secret" },
+];
+
+const APP_SETTINGS: SettingsItem[] = [
+  { key: "database", label: "Database", type: "select" },
   { key: "theme", label: "Theme", type: "select" },
   { key: "timezone", label: "Timezone", type: "text" },
   { key: "menuBar", label: "Menu Bar", type: "toggle" },
   { key: "exportDatabase", label: "Export Database", type: "action" },
   { key: "importDatabase", label: "Import Database", type: "action" },
-] as const;
+];
+
+const ALL_SETTINGS = [...BUSINESS_SETTINGS, ...APP_SETTINGS];
 
 export function SettingsView({
   settings,
   selectedIndex,
   theme,
+  currentDbFilename,
+  onSelectDatabase,
   onEditBusinessName,
   onEditStripeKey,
   onEditTimezone,
@@ -58,6 +70,8 @@ export function SettingsView({
 
   const getValue = (key: string) => {
     switch (key) {
+      case "database":
+        return currentDbFilename.replace(/\.db$/, "");
       case "theme":
         return getThemeDisplay();
       case "businessName":
@@ -79,6 +93,8 @@ export function SettingsView({
 
   const getAction = (key: string) => {
     switch (key) {
+      case "database":
+        return onSelectDatabase;
       case "theme":
         return onSelectTheme;
       case "businessName":
@@ -105,6 +121,38 @@ export function SettingsView({
     return "edit";
   };
 
+  const renderItem = (item: SettingsItem, globalIndex: number) => {
+    const isSelected = globalIndex === selectedIndex;
+    return (
+      <box
+        key={item.key}
+        style={{
+          flexDirection: "row",
+          paddingLeft: 1,
+          paddingRight: 1,
+          backgroundColor: isSelected ? colors.selectedRowBg : "transparent",
+        }}
+      >
+        <box style={{ width: 20 }}>
+          <text
+            fg={isSelected ? colors.selectedText : colors.textPrimary}
+            attributes={isSelected ? "bold" : undefined}
+          >
+            {item.label}
+          </text>
+        </box>
+        <box style={{ flexGrow: 1 }}>
+          <text fg={isSelected ? colors.selectedText : colors.textSecondary}>
+            {getValue(item.key)}
+          </text>
+        </box>
+        {isSelected && (
+          <text fg={colors.accent}>[Enter to {getActionLabel(item.type)}]</text>
+        )}
+      </box>
+    );
+  };
+
   return (
     <box
       style={{
@@ -113,12 +161,8 @@ export function SettingsView({
         padding: 1,
       }}
     >
-      <box style={{ marginBottom: 1 }}>
-        <text fg={colors.accent}>Application Settings</text>
-      </box>
-
       <box
-        title="Settings"
+        title="Business"
         style={{
           border: true,
           borderColor: colors.borderSubtle,
@@ -126,37 +170,22 @@ export function SettingsView({
           flexDirection: "column",
         }}
       >
-        {SETTINGS_ITEMS.map((item, index) => {
-          const isSelected = index === selectedIndex;
-          return (
-            <box
-              key={item.key}
-              style={{
-                flexDirection: "row",
-                paddingLeft: 1,
-                paddingRight: 1,
-                backgroundColor: isSelected ? colors.selectedRowBg : "transparent",
-              }}
-            >
-              <box style={{ width: 20 }}>
-                <text
-                  fg={isSelected ? colors.selectedText : colors.textPrimary}
-                  attributes={isSelected ? "bold" : undefined}
-                >
-                  {item.label}
-                </text>
-              </box>
-              <box style={{ flexGrow: 1 }}>
-                <text fg={isSelected ? colors.selectedText : colors.textSecondary}>
-                  {getValue(item.key)}
-                </text>
-              </box>
-              {isSelected && (
-                <text fg={colors.accent}>[Enter to {getActionLabel(item.type)}]</text>
-              )}
-            </box>
-          );
-        })}
+        {BUSINESS_SETTINGS.map((item, i) => renderItem(item, i))}
+      </box>
+
+      <box
+        title="App"
+        style={{
+          border: true,
+          borderColor: colors.borderSubtle,
+          padding: 1,
+          flexDirection: "column",
+          marginTop: 1,
+        }}
+      >
+        {APP_SETTINGS.map((item, i) =>
+          renderItem(item, BUSINESS_SETTINGS.length + i),
+        )}
       </box>
 
       <box style={{ marginTop: 2 }}>
@@ -166,10 +195,10 @@ export function SettingsView({
       </box>
 
       <box style={{ marginTop: 1 }}>
-        <text fg={colors.textMuted}>Database location: ~/.paca/paca.db</text>
+        <text fg={colors.textMuted}>Database: ~/.paca/{currentDbFilename}</text>
       </box>
     </box>
   );
 }
 
-export const SETTINGS_COUNT = SETTINGS_ITEMS.length;
+export const SETTINGS_COUNT = ALL_SETTINGS.length;

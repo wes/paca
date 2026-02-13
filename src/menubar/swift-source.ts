@@ -29,7 +29,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     override init() {
         let home = FileManager.default.homeDirectoryForCurrentUser
-        dbPath = home.appendingPathComponent(".paca/paca.db").path
+        let pacaDir = home.appendingPathComponent(".paca")
+        let activePath = pacaDir.appendingPathComponent(".active").path
+        var dbFilename = "paca.db"
+        if let activeContent = try? String(contentsOfFile: activePath, encoding: .utf8) {
+            let trimmed = activeContent.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { dbFilename = trimmed }
+        }
+        dbPath = pacaDir.appendingPathComponent(dbFilename).path
         super.init()
     }
 
@@ -43,9 +50,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func resolveDbPath() -> String {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let pacaDir = home.appendingPathComponent(".paca")
+        let activePath = pacaDir.appendingPathComponent(".active").path
+        var dbFilename = "paca.db"
+        if let activeContent = try? String(contentsOfFile: activePath, encoding: .utf8) {
+            let trimmed = activeContent.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { dbFilename = trimmed }
+        }
+        return pacaDir.appendingPathComponent(dbFilename).path
+    }
+
     func updateMenu() {
+        let currentDbPath = resolveDbPath()
         var db: OpaquePointer?
-        guard sqlite3_open_v2(dbPath, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else {
+        guard sqlite3_open_v2(currentDbPath, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else {
             setIdleAppearance()
             statusItem.menu = buildFallbackMenu("Database not found")
             return
@@ -209,8 +229,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let desc = response == .alertFirstButtonReturn ? input.stringValue : nil
 
+        let currentDbPath = resolveDbPath()
         var db: OpaquePointer?
-        guard sqlite3_open(dbPath, &db) == SQLITE_OK else { return }
+        guard sqlite3_open(currentDbPath, &db) == SQLITE_OK else { return }
         defer { sqlite3_close(db) }
         sqlite3_exec(db, "PRAGMA journal_mode=WAL", nil, nil, nil)
         sqlite3_busy_timeout(db, 5000)
@@ -234,8 +255,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func startTimerClicked(_ sender: NSMenuItem) {
         guard let projectId = sender.representedObject as? String else { return }
 
+        let currentDbPath = resolveDbPath()
         var db: OpaquePointer?
-        guard sqlite3_open(dbPath, &db) == SQLITE_OK else { return }
+        guard sqlite3_open(currentDbPath, &db) == SQLITE_OK else { return }
         defer { sqlite3_close(db) }
         sqlite3_exec(db, "PRAGMA journal_mode=WAL", nil, nil, nil)
         sqlite3_busy_timeout(db, 5000)
