@@ -21,6 +21,8 @@ import {
 	CreateInvoiceModal,
 	ThemeSelectModal,
 	DatabaseSelectModal,
+	ReportsView,
+	REPORT_TAB_COUNT,
 } from "./components/index.ts";
 import { InvoicesView } from "./components/InvoicesView.tsx";
 import {
@@ -32,8 +34,10 @@ import {
 	database,
 	customers,
 	invoices,
+	reports,
 	switchDatabase,
 } from "./db.ts";
+import type { ReportsData } from "./reports.ts";
 import {
 	getActiveDbFilename,
 	setActiveDbFilename,
@@ -162,6 +166,11 @@ export function App() {
 	const [invoicesHasMore, setInvoicesHasMore] = useState(false);
 	const [invoicesCursors, setInvoicesCursors] = useState<string[]>([]); // Stack of cursors for pagination
 
+	// Reports State
+	const [reportsData, setReportsData] = useState<ReportsData | null>(null);
+	const [reportsLoading, setReportsLoading] = useState(false);
+	const [reportsTab, setReportsTab] = useState(0);
+
 	// Database State
 	const [currentDbFilename, setCurrentDbFilename] = useState(getActiveDbFilename());
 
@@ -205,6 +214,19 @@ export function App() {
 			recent as (Task & { project: { name: string; color: string } })[],
 		);
 		setWeeklyTimeData(weeklyTime);
+	}, []);
+
+	const loadReports = useCallback(async () => {
+		setReportsLoading(true);
+		try {
+			setReportsData(await reports.build());
+		} catch (error) {
+			setStatusMessage(
+				`Error building reports: ${error instanceof Error ? error.message : error}`,
+			);
+		} finally {
+			setReportsLoading(false);
+		}
 	}, []);
 
 	const loadRunningTimer = useCallback(async () => {
@@ -425,6 +447,13 @@ export function App() {
 		}
 	}, [currentView, showAllTimers]);
 
+	// Rebuild reports whenever the reports view is opened
+	useEffect(() => {
+		if (currentView === "reports") {
+			loadReports();
+		}
+	}, [currentView, loadReports]);
+
 	// Load invoices when on invoices view
 	useEffect(() => {
 		if (currentView === "invoices") {
@@ -566,6 +595,10 @@ export function App() {
 			return;
 		}
 		if (key.name === "5") {
+			setCurrentView("reports");
+			return;
+		}
+		if (key.name === "6") {
 			setCurrentView("settings");
 			return;
 		}
@@ -604,7 +637,27 @@ export function App() {
 		if (currentView === "invoices") {
 			handleInvoicesKeyboard(key);
 		}
+		if (currentView === "reports") {
+			handleReportsKeyboard(key);
+		}
 	});
+
+	// j/k/arrows are consumed by the focused scrollbox, so reports only needs
+	// horizontal tab movement plus a manual refresh.
+	const handleReportsKeyboard = (key: { name: string }) => {
+		if (key.name === "right" || key.name === "l" || key.name === "]" || key.name === "tab") {
+			setReportsTab((i) => (i + 1) % REPORT_TAB_COUNT);
+			return;
+		}
+		if (key.name === "left" || key.name === "h" || key.name === "[") {
+			setReportsTab((i) => (i - 1 + REPORT_TAB_COUNT) % REPORT_TAB_COUNT);
+			return;
+		}
+		if (key.name === "r") {
+			loadReports();
+			showMessage("Reports refreshed");
+		}
+	};
 
 	const handleDashboardKeyboard = (key: { name: string }) => {
 		const maxIndex = recentTasks.length - 1;
@@ -1583,6 +1636,16 @@ export function App() {
 						recentTasks={recentTasks}
 						weeklyTimeData={weeklyTimeData}
 						selectedIndex={selectedDashboardTaskIndex}
+						focused={true}
+						theme={getTheme(appSettings.theme)}
+					/>
+				)}
+
+				{currentView === "reports" && (
+					<ReportsView
+						data={reportsData}
+						loading={reportsLoading}
+						activeTab={reportsTab}
 						focused={true}
 						theme={getTheme(appSettings.theme)}
 					/>

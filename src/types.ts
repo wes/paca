@@ -6,8 +6,10 @@ import type {
 	Customer,
 	Invoice,
 } from "../generated/prisma/client.ts";
+import type { TimeSeriesPoint } from "./reports.ts";
 
 export type { Project, Task, Tag, TimeEntry, Customer, Invoice };
+export type { TimeSeriesPoint };
 
 export type TaskStatus = "todo" | "in_progress" | "done";
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
@@ -36,7 +38,8 @@ export type View =
 	| "settings"
 	| "help"
 	| "timesheets"
-	| "invoices";
+	| "invoices"
+	| "reports";
 
 export type Panel = "projects" | "tasks" | "details";
 
@@ -554,17 +557,8 @@ export interface DashboardStats {
 	completionRate: number;
 }
 
-export interface WeeklyTimeData {
-	weekStart: string;
-	weekLabel: string;
-	projects: {
-		projectId: string;
-		projectName: string;
-		projectColor: string;
-		ms: number;
-	}[];
-	totalMs: number;
-}
+// Weekly chart data is a plain time series bucket (see src/reports.ts)
+export type WeeklyTimeData = TimeSeriesPoint;
 
 export interface TimesheetGroup {
 	project: {

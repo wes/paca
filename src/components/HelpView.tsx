@@ -9,9 +9,11 @@ const KEYBINDINGS = [
     category: "Navigation",
     bindings: [
       { key: "1", action: "Go to Dashboard" },
-      { key: "2", action: "Go to Projects" },
-      { key: "3", action: "Go to Tasks" },
-      { key: "4", action: "Go to Settings" },
+      { key: "2", action: "Go to Tasks" },
+      { key: "3", action: "Go to Timesheets" },
+      { key: "4", action: "Go to Invoices" },
+      { key: "5", action: "Go to Reports" },
+      { key: "6", action: "Go to Settings" },
       { key: "?", action: "Show Help" },
       { key: "Tab", action: "Toggle panels" },
       { key: "h/l or ←/→", action: "Switch panels" },
@@ -46,6 +48,16 @@ const KEYBINDINGS = [
     bindings: [
       { key: "t", action: "Start timer" },
       { key: "s", action: "Stop running timer" },
+    ],
+  },
+  {
+    category: "Reports",
+    bindings: [
+      { key: "←/→ or h/l", action: "Switch report" },
+      { key: "[ / ]", action: "Switch report" },
+      { key: "j/k or ↑/↓", action: "Scroll report" },
+      { key: "PgUp/PgDn", action: "Page through report" },
+      { key: "r", action: "Recalculate reports" },
     ],
   },
 ];

@@ -67,6 +67,15 @@ function getShortCuts(
 		];
 	}
 
+	if (currentView === "reports") {
+		return [
+			...baseShortcuts,
+			{ key: "←/→", action: "report" },
+			{ key: "⇅", action: "scroll" },
+			{ key: "r", action: "refresh" },
+		];
+	}
+
 	if (currentView === "settings") {
 		return [...baseShortcuts];
 	}

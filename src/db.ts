@@ -1,6 +1,14 @@
 import { PrismaClient } from "../generated/prisma/client.ts";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 import { getActiveDbPath } from "./db-path.ts";
+import {
+  buildReports,
+  buildSeries,
+  normalizeEntries,
+  startOfWeek,
+  type ReportsData,
+  type TimeSeriesPoint,
+} from "./reports.ts";
 
 // Get current database path (reads active db each time)
 export function getDbPath(): string {
@@ -346,15 +354,12 @@ export const stats = {
     };
   },
 
-  async getWeeklyTimeStats(months = 6) {
-    // Get date 6 months ago
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - months);
-    startDate.setHours(0, 0, 0, 0);
-    // Set to start of that week (Sunday)
-    startDate.setDate(startDate.getDate() - startDate.getDay());
+  async getWeeklyTimeStats(months = 6): Promise<TimeSeriesPoint[]> {
+    const now = new Date();
+    const from = new Date(now);
+    from.setMonth(from.getMonth() - months);
+    const startDate = startOfWeek(from);
 
-    // Get all time entries in this range
     const entries = await db.timeEntry.findMany({
       where: {
         startTime: { gte: startDate },
@@ -362,75 +367,48 @@ export const stats = {
       },
       include: {
         project: {
-          select: { id: true, name: true, color: true },
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            hourlyRate: true,
+            customer: { select: { id: true, name: true } },
+          },
         },
       },
     });
 
-    // Group entries by week and project
-    const weeklyData = new Map<string, Map<string, { ms: number; project: { id: string; name: string; color: string } }>>();
+    // buildSeries gap-fills empty weeks so the x-axis stays linear in time.
+    return buildSeries(normalizeEntries(entries), "week", {
+      from: startDate,
+      to: now,
+    });
+  },
+};
 
-    for (const entry of entries) {
-      if (!entry.endTime) continue;
+// Reporting / analytics
+export const reports = {
+  async getSourceEntries() {
+    return db.timeEntry.findMany({
+      where: { endTime: { not: null } },
+      orderBy: { startTime: "asc" },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            hourlyRate: true,
+            customer: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+  },
 
-      // Get week start (Sunday) for this entry
-      const entryDate = new Date(entry.startTime);
-      const weekStart = new Date(entryDate);
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-      weekStart.setHours(0, 0, 0, 0);
-      const weekKey = weekStart.toISOString().split("T")[0]!;
-
-      if (!weeklyData.has(weekKey)) {
-        weeklyData.set(weekKey, new Map());
-      }
-
-      const weekMap = weeklyData.get(weekKey)!;
-      const projectId = entry.project.id;
-
-      if (!weekMap.has(projectId)) {
-        weekMap.set(projectId, { ms: 0, project: entry.project });
-      }
-
-      const projectData = weekMap.get(projectId)!;
-      projectData.ms += new Date(entry.endTime).getTime() - new Date(entry.startTime).getTime();
-    }
-
-    // Convert to array sorted by week
-    const result: {
-      weekStart: string;
-      weekLabel: string;
-      projects: { projectId: string; projectName: string; projectColor: string; ms: number }[];
-      totalMs: number;
-    }[] = [];
-
-    const sortedWeeks = Array.from(weeklyData.keys()).sort();
-    for (const weekKey of sortedWeeks) {
-      const weekMap = weeklyData.get(weekKey)!;
-      const weekDate = new Date(weekKey);
-      const weekLabel = `${weekDate.getMonth() + 1}/${weekDate.getDate()}`;
-
-      const projects: { projectId: string; projectName: string; projectColor: string; ms: number }[] = [];
-      let totalMs = 0;
-
-      for (const [projectId, data] of weekMap) {
-        projects.push({
-          projectId,
-          projectName: data.project.name,
-          projectColor: data.project.color,
-          ms: data.ms,
-        });
-        totalMs += data.ms;
-      }
-
-      result.push({
-        weekStart: weekKey,
-        weekLabel,
-        projects,
-        totalMs,
-      });
-    }
-
-    return result;
+  async build(): Promise<ReportsData> {
+    const rows = await this.getSourceEntries();
+    return buildReports(rows, new Date());
   },
 };
 

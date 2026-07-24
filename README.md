@@ -16,6 +16,7 @@ A simple TUI app for task, timer and invoicing for projects.
 - **Stripe Invoicing** - Create draft invoices directly from time entries
 - **Invoice Management** - View and manage all your Stripe invoices
 - **Dashboard** - Overview of projects, tasks, and time stats
+- **Reports** - Weekly/monthly hour & earnings analytics, trends, client and project breakdowns, work patterns
 - **Menu Bar** - Native macOS menu bar companion for quick timer control
 - **Offline-first** - All data stored locally in SQLite
 - **Vim-style Navigation** - Keyboard-driven interface
@@ -65,7 +66,8 @@ On first run, Paca will automatically create its database at `~/.paca/paca.db`.
 | `2` | Tasks |
 | `3` | Timesheets |
 | `4` | Invoices |
-| `5` | Settings |
+| `5` | Reports |
+| `6` | Settings |
 | `?` | Help |
 | `t` | Start timer |
 | `s` | Stop timer (when running) |
@@ -80,6 +82,16 @@ On first run, Paca will automatically create its database at `~/.paca/paca.db`.
 | `Tab` | Switch panels |
 | `Enter` | Select/Confirm |
 | `Esc` | Cancel/Go back |
+
+### Reports
+
+| Key | Action |
+|-----|--------|
+| `←` / `→` or `h` / `l` | Previous/next report |
+| `[` / `]` | Previous/next report |
+| `j` / `k` or `↑` / `↓` | Scroll |
+| `PgUp` / `PgDn` | Page through a report |
+| `r` | Recalculate |
 
 ### Projects & Tasks
 
@@ -116,7 +128,7 @@ On first run, Paca will automatically create its database at `~/.paca/paca.db`.
 
 ### Settings
 
-Access settings by pressing `5`:
+Access settings by pressing `6`:
 
 - **Business Name** - Your business name for invoices
 - **Stripe API Key** - Enable invoicing features

@@ -15,7 +15,8 @@ const VIEWS: { key: View; label: string; shortcut: string }[] = [
 	{ key: "tasks", label: "tasks", shortcut: "2" },
 	{ key: "timesheets", label: "sheets", shortcut: "3" },
 	{ key: "invoices", label: "invoices", shortcut: "4" },
-	{ key: "settings", label: "settings", shortcut: "5" },
+	{ key: "reports", label: "reports", shortcut: "5" },
+	{ key: "settings", label: "settings", shortcut: "6" },
 	{ key: "help", label: "help", shortcut: "?" },
 ];
 

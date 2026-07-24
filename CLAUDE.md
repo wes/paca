@@ -19,6 +19,7 @@ src/
   index.tsx      - Entry point, CLI setup
   App.tsx        - Main app component, state management
   db.ts          - Database client and operations
+  reports.ts     - Pure analytics engine (buckets, averages, streaks, earnings)
   types.ts       - TypeScript types
   components/    - TUI components
     Header.tsx
@@ -26,6 +27,8 @@ src/
     ProjectList.tsx
     TaskList.tsx
     Dashboard.tsx
+    ReportsView.tsx - Tabbed analytics screen
+    Charts.tsx      - Shared chart primitives (bars, sparklines, stat tiles)
     HelpView.tsx
     InputModal.tsx
 prisma/
