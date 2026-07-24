@@ -1,4 +1,4 @@
-import { PrismaClient } from "../generated/prisma/client.ts";
+import { PrismaClient, Prisma } from "../generated/prisma/client.ts";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 import { getActiveDbPath } from "./db-path.ts";
 import {
@@ -18,7 +18,43 @@ export function getDbPath(): string {
 // Create a new PrismaClient for a given database path
 function createClient(dbPath: string): PrismaClient {
   const adapter = new PrismaLibSql({ url: `file:${dbPath}` });
-  return new PrismaClient({ adapter });
+  try {
+    return new PrismaClient({ adapter });
+  } catch (error) {
+    throw explainClientFailure(error);
+  }
+}
+
+// The generated Prisma client ships inside this package and is locked to the
+// generator that emitted it. If the installed @prisma/client runtime is a
+// different version, construction dies deep inside the runtime with an opaque
+// message (e.g. "undefined is not an object (evaluating 't.graph')"). Surface
+// something the user can actually act on.
+function explainClientFailure(error: unknown): Error {
+  const generatedFor = Prisma.prismaVersion?.client ?? "unknown";
+  let runtime = "unknown";
+  try {
+    runtime =
+      (require("@prisma/client/package.json") as { version?: string })
+        .version ?? "unknown";
+  } catch {}
+
+  if (runtime !== "unknown" && runtime !== generatedFor) {
+    return new Error(
+      [
+        "Paca's database client does not match the installed Prisma runtime.",
+        `  bundled client: ${generatedFor}`,
+        `  installed runtime: ${runtime}`,
+        "",
+        "Regenerate the client to fix it:",
+        "  cd $(dirname $(dirname $(which paca))) && bunx prisma generate",
+        "or reinstall with: bun install -g pacatui",
+      ].join("\n"),
+      { cause: error },
+    );
+  }
+
+  return error instanceof Error ? error : new Error(String(error));
 }
 
 // Create Prisma client with adapter
