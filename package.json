@@ -1,6 +1,6 @@
 {
   "name": "pacatui",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "A simple tui app for task, timer and invoicing for projects.",
   "module": "src/index.tsx",
   "type": "module",
@@ -12,7 +12,8 @@
     "src",
     "prisma",
     "generated",
-    "assets"
+    "assets",
+    "prisma.config.ts"
   ],
   "scripts": {
     "start": "bun run src/index.tsx",
@@ -62,12 +63,11 @@
     "@libsql/client": "^0.17.0",
     "@opentui/core": "^0.1.72",
     "@opentui/react": "^0.1.72",
-    "@prisma/adapter-better-sqlite3": "^7.2.0",
-    "@prisma/adapter-libsql": "^7.2.0",
-    "@prisma/client": "^7.2.0",
+    "@prisma/adapter-better-sqlite3": "7.2.0",
+    "@prisma/adapter-libsql": "7.2.0",
+    "@prisma/client": "7.2.0",
     "better-sqlite3": "^12.6.0",
-    "paca4": ".",
-    "prisma": "^7.2.0",
+    "prisma": "7.2.0",
     "react": "^19.2.3",
     "stripe": "^20.2.0"
   }
