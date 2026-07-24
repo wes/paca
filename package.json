@@ -1,6 +1,6 @@
 {
   "name": "pacatui",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "A simple tui app for task, timer and invoicing for projects.",
   "module": "src/index.tsx",
   "type": "module",
@@ -68,7 +68,7 @@
     "@prisma/client": "7.2.0",
     "better-sqlite3": "^12.6.0",
     "prisma": "7.2.0",
-    "react": "^19.2.3",
+    "react": "19.2.3",
     "stripe": "^20.2.0"
   }
 }
