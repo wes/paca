@@ -147,7 +147,7 @@ Paca includes a native macOS menu bar companion that shows your running timer an
 
 ### Enable via Settings
 
-1. Press `5` to open Settings
+1. Press `6` to open Settings
 2. Select **Menu Bar** and press `Enter` to toggle it on
 
 ### Enable via CLI
@@ -167,7 +167,7 @@ The first time you enable it, Paca compiles a small native Swift helper binary (
 To enable invoicing:
 
 1. Get your Stripe API key from [dashboard.stripe.com/apikeys](https://dashboard.stripe.com/apikeys)
-2. Press `5` to go to Settings
+2. Press `6` to go to Settings
 3. Add your Stripe Secret Key
 4. Link customers to projects using `c` in the Projects view
 5. Create invoices from the Timesheets view
