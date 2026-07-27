@@ -6,6 +6,9 @@ A simple TUI app for task, timer and invoicing for projects.
 
 ![License](https://img.shields.io/npm/l/pacatui)
 ![npm](https://img.shields.io/npm/v/pacatui)
+![npm downloads](https://img.shields.io/npm/dm/pacatui)
+
+> Track your time and bill for it without leaving the terminal. If Paca saves you a few minutes a week, a ⭐ on [GitHub](https://github.com/wes/paca) helps other freelancers find it.
 
 ## Features
 
