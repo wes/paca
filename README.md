@@ -10,6 +10,8 @@ A simple TUI app for task, timer and invoicing for projects.
 
 > Track your time and bill for it without leaving the terminal. If Paca saves you a few minutes a week, a ⭐ on [GitHub](https://github.com/wes/paca) helps other freelancers find it.
 
+![Paca in action](docs/paca-demo.gif)
+
 ## Features
 
 - **Project Management** - Organize tasks by projects with color coding
@@ -147,6 +149,8 @@ Access settings by pressing `6`:
 ## Menu Bar (macOS)
 
 Paca includes a native macOS menu bar companion that shows your running timer and lets you start/stop timers without opening the TUI.
+
+![Paca menu bar companion](docs/paca-menubar.gif)
 
 ### Enable via Settings
 
