@@ -5,14 +5,58 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # create the GitHub Release
+      id-token: write # npm provenance attestation
     steps:
       - uses: actions/checkout@v4
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # npm rather than `bun publish` for this one step: bun has no
+      # --provenance flag as of 1.3.14, and the attestation is the only
+      # machine-checkable answer to "does the tarball on the registry match
+      # the commit in this repo" -- which is the question we could not answer
+      # when 0.1.22 sat on npm without the credential fix.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      # A tag that disagrees with package.json publishes one version under a
+      # tag naming another. Fail here rather than on the registry, where a
+      # version number cannot be reused once it is taken.
+      - name: Tag must match package.json version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} implies version ${tag}, package.json says ${pkg}"
+            exit 1
+          fi
+          echo "publishing pacatui@${pkg}"
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun test
+
+      # generated/ is gitignored and reaches the tarball only through the
+      # prepublishOnly hook, which npm runs for us here.
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Last, so a GitHub Release never announces a version npm does not serve.
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
