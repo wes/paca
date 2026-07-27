@@ -1226,20 +1226,15 @@ export function App() {
 
 	// Settings handlers
 	const handleExportDatabase = async () => {
-		const { existsSync, mkdirSync } = await import("fs");
-		const backupDir = `${process.env.HOME}/.paca/backups`;
-
-		// Ensure backups directory exists
-		if (!existsSync(backupDir)) {
-			mkdirSync(backupDir, { recursive: true });
-		}
+		const { getBackupsDir } = await import("./db-path.ts");
+		const backupDir = getBackupsDir();
 
 		const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 		const dbName = currentDbFilename.replace(/\.db$/, "");
 		const exportPath = `${backupDir}/${dbName}-backup-${timestamp}.db`;
 		try {
 			await database.exportToFile(exportPath);
-			showMessage(`Exported to ${exportPath}`);
+			showMessage(`Exported to ${exportPath} (Stripe key not included)`);
 		} catch (error) {
 			showMessage(`Export failed: ${error}`);
 		}
@@ -1259,10 +1254,17 @@ export function App() {
 	};
 
 	const handleUpdateStripeKey = async (key: string) => {
-		await settings.set("stripeApiKey", key);
-		setAppSettings((prev) => ({ ...prev, stripeApiKey: key }));
+		const trimmed = key.trim();
+		await settings.set("stripeApiKey", trimmed);
+		setAppSettings((prev) => ({ ...prev, stripeApiKey: trimmed }));
 		setInputMode(null);
-		showMessage("Stripe API key updated");
+		// sk_ keys can do anything to the account. rk_ keys are scoped, and
+		// Paca only needs Customers + Invoices write.
+		if (trimmed.startsWith("sk_")) {
+			showMessage("Stripe key updated — use a restricted key (rk_) instead, see README");
+		} else {
+			showMessage("Stripe API key updated");
+		}
 	};
 
 	const handleUpdateTimezone = async (tz: string) => {
@@ -1827,7 +1829,7 @@ export function App() {
 					mode={inputMode}
 					title="Stripe API Key"
 					initialValue={appSettings.stripeApiKey}
-					placeholder="sk_live_..."
+					placeholder="rk_live_..."
 					onSubmit={handleUpdateStripeKey}
 					onCancel={() => setInputMode(null)}
 					theme={theme}

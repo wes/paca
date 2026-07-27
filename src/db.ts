@@ -752,9 +752,11 @@ export const invoices = {
 
 // Database import/export operations
 export const database = {
+  // Exports omit the Stripe API key — a backup file is something people copy
+  // into cloud storage or hand to someone else. Re-enter the key after a restore.
   async exportToFile(targetPath: string): Promise<void> {
-    const { copyFileSync } = await import("fs");
-    copyFileSync(getDbPath(), targetPath);
+    const { writeSanitizedSnapshot } = await import("./db-snapshot.ts");
+    writeSanitizedSnapshot(getDbPath(), targetPath);
   },
 
   async importFromFile(sourcePath: string): Promise<void> {

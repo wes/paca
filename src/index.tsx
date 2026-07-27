@@ -175,6 +175,15 @@ async function main() {
 		}
 	}
 
+	// Tighten ~/.paca to owner-only. Installs created before this shipped still
+	// have whatever the umask gave them.
+	try {
+		const { hardenPacaPermissions } = await import("./db-path.ts");
+		hardenPacaPermissions();
+	} catch {
+		// Non-critical — skip if the filesystem rejects it
+	}
+
 	// Daily auto-backup (rolling 30 days)
 	try {
 		const { performDailyBackup } = await import("./db-path.ts");
