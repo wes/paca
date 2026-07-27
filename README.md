@@ -144,7 +144,9 @@ Access settings by pressing `6`:
 ### Data Location
 
 - Database: `~/.paca/paca.db`
-- Backups: `~/.paca/backups/`
+- Backups: `~/.paca/backups/` — exports and daily auto-backups, with the Stripe key removed
+
+Both live in a `0700` directory with `0600` files, readable only by you.
 
 ## Menu Bar (macOS)
 
@@ -173,11 +175,25 @@ The first time you enable it, Paca compiles a small native Swift helper binary (
 
 To enable invoicing:
 
-1. Get your Stripe API key from [dashboard.stripe.com/apikeys](https://dashboard.stripe.com/apikeys)
+1. Create a **restricted key** at [dashboard.stripe.com/apikeys](https://dashboard.stripe.com/apikeys) → *Create restricted key*. Paca needs exactly two write permissions:
+   - **Customers** — Write
+   - **Invoices** — Write
+
+   Leave everything else set to *None*. The key starts with `rk_`.
 2. Press `6` to go to Settings
-3. Add your Stripe Secret Key
+3. Add the key under **Stripe API Key**
 4. Link customers to projects using `c` in the Projects view
 5. Create invoices from the Timesheets view
+
+> Use a restricted (`rk_`) key, not a standard secret (`sk_`) key. A secret key can move money, read your full customer list and issue refunds; a restricted key scoped as above can only do what Paca actually does. Paca will warn you if you paste an `sk_` key.
+
+### Where the key is stored
+
+The key is stored in plain text in the SQLite database at `~/.paca/paca.db`, which Paca keeps at `0600` inside a `0700` directory. That protects it from other users on the machine. It does **not** protect it from anything running as you, so:
+
+- Do not put `~/.paca` in a synced folder (Dropbox, iCloud Drive, a dotfiles repo).
+- Exports and the daily auto-backup in `~/.paca/backups/` have the Stripe key stripped out, so those files are safe to copy elsewhere. After restoring from a backup, re-enter your key in Settings.
+- Rotate the key in the Stripe dashboard if you suspect the file has been copied.
 
 ## Tech Stack
 
